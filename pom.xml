@@ -18,17 +18,35 @@
     <module>src/argouml-core-model</module>
     <module>src/argouml-core-model-mdr</module>
     <module>src/argouml-core-model-euml</module>
-    <module>src/argouml-core-notation</module>
-    <module>src/argouml-core-transformer</module>
-    <module>src/argouml-core-umlpropertypanels</module>
-    <module>src/argouml-core-diagrams-activity2</module>
+    <!-- The following 7 plugin modules (argouml-core-notation,
+         argouml-core-transformer, argouml-core-umlpropertypanels, and the
+         argouml-core-diagrams-* family) are intentionally NOT listed here.
+         They depend on argouml-app at compile time (e.g. they import
+         org.argouml.uml.diagram.DiagramFactory and call
+         DiagramFactory.getInstance().registerDiagramFactory(...)), so if
+         argouml-app also depended on them in the reactor, Maven would flag
+         a ProjectCycleException. argouml-app declares them as compile-scope
+         deps (see src/argouml-app/pom.xml) which Maven resolves from the
+         local repository (~/.m2/repository/org/argouml/...). Run the
+         following once after cloning the repo to populate the local
+         repo:
+
+           mvn -pl src/argouml-core-notation,\
+           src/argouml-core-diagrams-sequence2,\
+           src/argouml-core-diagrams-activity2,\
+           src/argouml-core-diagrams-state2,\
+           src/argouml-core-diagrams-deployment2,\
+           src/argouml-core-umlpropertypanels,\
+           src/argouml-core-transformer \
+             install -Dmaven.test.skip=true -o
+
+         argouml-build also references these (resolving from the local
+         repo) so the fat jar continues to bundle them once installed. -->
     <module>src/argouml-core-diagrams-class2</module>
-    <module>src/argouml-core-diagrams-sequence2</module>
-    <module>src/argouml-core-diagrams-state2</module>
     <module>src/argouml-core-diagrams-structure2</module>
-    <module>src/argouml-core-diagrams-deployment2</module>
     <module>src/argouml-app</module>
     <module>src/argouml-build</module>
+    <module>externals/argouml-i18n-zh</module>
   </modules>
 
   <name>argouml-core</name>

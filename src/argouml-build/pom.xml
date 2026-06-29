@@ -89,6 +89,21 @@
       <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
+
+    <!-- Chinese localization bundle. Pulled in here so the
+         jar-with-dependencies assembly pulls org/argouml/i18n/*_zh_*.properties
+         into the fat jar. Without this dependency on argouml-build, the i18n
+         bundle would only be present if argouml-build pulled it transitively
+         from argouml -> argouml-i18n-zh, which the broken assembly plugin
+         (maven-assembly-plugin 2.4 + jar-with-dependencies descriptor) does
+         not actually do for nested modules. Declaring it explicitly here
+         guarantees inclusion regardless of assembly bug. -->
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-i18n-zh</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <scm>

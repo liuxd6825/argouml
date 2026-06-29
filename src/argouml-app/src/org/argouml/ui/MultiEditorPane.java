@@ -57,6 +57,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.argouml.application.api.AbstractArgoJPanel;
+import org.argouml.i18n.Translator;
 import org.argouml.ui.targetmanager.TargetEvent;
 import org.argouml.ui.targetmanager.TargetListener;
 import org.argouml.ui.targetmanager.TargetManager;
@@ -133,8 +134,7 @@ public class MultiEditorPane
             if (t instanceof AbstractArgoJPanel) {
                 title = ((AbstractArgoJPanel) t).getTitle();
             }
-            // TODO: I18N
-            tabs.addTab("As " + title, t);
+            tabs.addTab(Translator.localize("ui.editor.tab-as", new Object[] {title}), t);
             tabs.setEnabledAt(i, false);
             if (t instanceof TargetListener) {
                 TargetManager.getInstance()

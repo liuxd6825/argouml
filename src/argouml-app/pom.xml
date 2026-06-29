@@ -26,6 +26,93 @@
       <scope>compile</scope>
     </dependency>
 
+    <!-- Diagram / property-panel / transformer modules.
+         Each lives under src/argouml-core-*/ but uses the *legacy*
+         artifactId (e.g. src/argouml-core-diagrams-sequence2 has
+         <artifactId>argouml-diagrams-sequence</artifactId>). They are
+         intentionally excluded from the root reactor (see pom.xml) to
+         avoid a ProjectCycleException. These modules depend on
+         argouml-app at compile time (e.g. they import
+         org.argouml.uml.diagram.DiagramFactory and call
+         DiagramFactory.getInstance().registerDiagramFactory(...)), so
+         argouml-app cannot also be a reactor participant that depends
+         back on them. Instead they are built standalone with
+
+             mvn -pl src/<mod> install -Dmaven.test.skip=true -o
+
+         and resolved as standard compile deps from ~/.m2 here, so the
+         classes are on the classpath when ModuleLoader2.huntForModules()
+         runs -Dargouml.modules=... in source-mode launches (IntelliJ
+         IDEA Debug). Without this dep, ModuleLoader2 logs SEVERE
+         "Could not load module from class
+         org.argouml.sequence2.SequenceDiagramModule" and the diagram
+         factories are never registered, so File -> New -> 时序图
+         silently fails. See AGENTS.md "things that will trip you up #4"
+         for the matching run-argouml.sh symptom. -->
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-notation</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-diagrams-activity</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-diagrams-state</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-diagrams-deployment</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-diagrams-sequence</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-umlpropertypanels</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-transformer</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <!-- Chinese localization bundle (vendor + patch merged inline).
+         Vendored from https://github.com/argouml-tigris-org/argouml-i18n-zh
+         (last upstream commit 89ec572, 2022-08-21). Activate at runtime with
+         -Duser.language=zh -Duser.country=CN (Simplified) or
+         -Duser.country=TW (Traditional). Compile scope so the bundle ships
+         inside argouml-jar-with-dependencies.jar and shows up automatically in
+         the IDEA run configuration's classpath.
+         The 86 keys missing from upstream (34 from mnemonic + wfr bundles,
+         plus 52 partial-additions) are appended directly to the vendor files
+         in externals/argouml-i18n-zh/src/org/argouml/i18n/ as direct
+         appends. A separate "patch" bundle was attempted but
+         ResourceBundle.getBundle() does not merge across classpath;
+         declaring both vendor and patch jars causes partial patch
+         bundles to mask the complete vendor bundles. -->
+    <dependency>
+      <groupId>org.argouml</groupId>
+      <artifactId>argouml-i18n-zh</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.tigris.gef</groupId>
       <artifactId>gef</artifactId>

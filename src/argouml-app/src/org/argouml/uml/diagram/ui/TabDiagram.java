@@ -132,7 +132,7 @@ public class TabDiagram
      * Default constructor.
      */
     public TabDiagram() {
-        this("Diagram");
+        this(org.argouml.i18n.Translator.localize("tab.diagram"));
     }
 
     /**
