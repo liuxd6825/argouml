@@ -31,63 +31,63 @@
       <groupId>org.argouml</groupId>
       <artifactId>argouml</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-diagrams-activity</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-diagrams-class</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-diagrams-deployment</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-diagrams-sequence</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-diagrams-state</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-notation</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-transformer</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>org.argouml</groupId>
       <artifactId>argouml-umlpropertypanels</artifactId>
       <version>${project.version}</version>
-      <scope>runtime</scope>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 
@@ -175,7 +175,7 @@
           <groupId>org.argouml</groupId>
       	  <artifactId>argouml-mdr</artifactId>
           <version>${project.version}</version>
-          <scope>runtime</scope>
+          <scope>compile</scope>
         </dependency>
       </dependencies>
     </profile>
@@ -186,7 +186,7 @@
           <groupId>org.argouml</groupId>
           <artifactId>argouml-euml</artifactId>
           <version>${project.version}</version>
-          <scope>runtime</scope>
+          <scope>compile</scope>
         </dependency>
       </dependencies>
     </profile>
