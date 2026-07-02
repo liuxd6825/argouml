@@ -16,6 +16,30 @@ export PATH=$JAVA_HOME/bin:$PATH
 ARGO_HOME=/Users/lxd/Projects/ai/uml-project/argouml
 CP="$ARGO_HOME/src/argouml-build/target/argouml-jar-with-dependencies.jar"
 
+# Ensure transitive deps (incl. argouml-ai.jar) are on the classpath.
+# The argouml-jar-with-dependencies.jar above does NOT bundle
+# argouml-ai classes; without this, AI features fail with
+# NoClassDefFoundError at first reference to org.argouml.ai.*.
+if [ ! -d /tmp/argouml-deps ] || [ -z "$(ls /tmp/argouml-deps/*.jar 2>/dev/null)" ]; then
+    echo "[run-argouml] /tmp/argouml-deps empty; populating from Maven cache..."
+    if [ -z "$JAVA_HOME" ]; then
+        export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-8.jdk/Contents/Home
+    fi
+    if [ -d "$ARGO_HOME/src/argouml-app" ]; then
+        mvn -f "$ARGO_HOME/src/argouml-app/pom.xml" \
+            dependency:copy-dependencies \
+            -DskipTests -o \
+            -DoutputDirectory=/tmp/argouml-deps >/dev/null 2>&1
+        if [ ! -d /tmp/argouml-deps ] || [ -z "$(ls /tmp/argouml-deps/*.jar 2>/dev/null)" ]; then
+            echo "[run-argouml] WARNING: dependency copy failed;"
+            echo "             argouml-ai.jar may not be on the classpath."
+            echo "             Run 'mvn -pl src/argouml-app dependency:copy-dependencies -DoutputDirectory=/tmp/argouml-deps' manually."
+        fi
+    else
+        echo "[run-argouml] WARNING: cannot find $ARGO_HOME/src/argouml-app"
+    fi
+fi
+
 # All argouml transitive deps (GEF, batik, MDR, etc.)
 for jar in /tmp/argouml-deps/*.jar; do
   CP="$CP:$jar"

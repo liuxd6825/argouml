@@ -59,6 +59,8 @@ import javax.swing.ToolTipManager;
 import javax.swing.UIDefaults;
 import javax.swing.UIManager;
 
+import org.argouml.ai.InitAiSubsystem;
+import org.argouml.ai.InitHttpServerSubsystem;
 import org.argouml.application.api.Argo;
 import org.argouml.application.api.CommandLineInterface;
 import org.argouml.application.security.ArgoAwtExceptionHandler;
@@ -150,36 +152,56 @@ public class Main {
      */
     public static void main(String[] args) {
         try {
+            System.err.println("[MAIN-ENTER] Main.main called with argouml.headless="
+                + System.getProperty("argouml.headless", "null"));
             LOG.log(Level.INFO, "ArgoUML Started.");
 
-            SimpleTimer st = new SimpleTimer();
-            st.mark("begin");
-
-            initPreinitialize();
-
-            st.mark("arguments");
-            parseCommandLine(args);
-
-            // Register our last chance exception handler
-            AwtExceptionHandler.registerExceptionHandler();
-
-            // Get the splash screen up as early as possible
-            st.mark("create splash");
-            SplashScreen splash = null;
-            if (!batch) {
-                // We have to do this to set the LAF for the splash screen
-                st.mark("initialize laf");
-                LookAndFeelMgr.getInstance().initializeLookAndFeel();
-                if (theTheme != null) {
-                    LookAndFeelMgr.getInstance().setCurrentTheme(theTheme);
-                }
-                if (doSplash) {
-                    splash = initializeSplash();
-                }
+            // When -Dargouml.headless=true is set on the command line,
+            // skip every AWT-blocking call: splash, ProjectBrowser
+            // construction, and Frame.setVisible(true). The HTTP server
+            // subsystem (InitHttpServerSubsystem) is initialized like
+            // normal so external clients can drive the same model over
+            // HTTP. The user's interactive Mac terminal runs Main
+            // WITHOUT the flag to get the real window.
+            boolean headless = "true".equalsIgnoreCase(
+                    System.getProperty("argouml.headless", "false"));
+            System.err.println("[HEADLESS-CHECK] argouml.headless=" + headless);
+            if (headless) {
+                LOG.log(Level.INFO, "argouml.headless=true: skipping GUI");
+                doSplash = false;
+                // NOTE: do NOT set batch=true (would cause System.exit
+                // after subsystems init). We just skip GUI parts and
+                // let the process continue so the HTTP server stays up.
             }
 
-            // main initialization happens here
-            ProjectBrowser pb = initializeSubsystems(st, splash);
+             SimpleTimer st = new SimpleTimer();
+             st.mark("begin");
+
+             initPreinitialize();
+
+             st.mark("arguments");
+             parseCommandLine(args);
+
+             // Register our last chance exception handler
+             AwtExceptionHandler.registerExceptionHandler();
+
+             // Get the splash screen up as early as possible
+             st.mark("create splash");
+             SplashScreen splash = null;
+             if (!batch && !headless) {
+                 // We have to do this to set the LAF for the splash screen
+                 st.mark("initialize laf");
+                 LookAndFeelMgr.getInstance().initializeLookAndFeel();
+                 if (theTheme != null) {
+                     LookAndFeelMgr.getInstance().setCurrentTheme(theTheme);
+                 }
+                 if (doSplash) {
+                     splash = initializeSplash();
+                 }
+             }
+
+             // main initialization happens here
+             ProjectBrowser pb = initializeSubsystems(st, splash);
 
             // Needs to happen after initialization is done & modules loaded
             st.mark("perform commands");
@@ -205,7 +227,12 @@ public class Main {
                 fileToOpen = new File(projectName);
             }
 
-            openProject(st, splash, pb, fileToOpen);
+            // In headless mode, force fileToOpen=null so openProject skips
+            // the JFileChooser / ProjectBrowser.loadProject2 path that
+            // would touch AWT; the project will instead be created via
+            // ProjectManager.makeEmptyProject (no GUI required).
+            File headlessFileToOpen = headless ? null : fileToOpen;
+            openProject(st, splash, pb, headlessFileToOpen);
 
             st.mark("perspectives");
             if (splash != null) {
@@ -214,7 +241,15 @@ public class Main {
 
             st.mark("open window");
             updateProgress(splash, 95, "statusmsg.bar.open-project-browser");
-            ArgoFrame.getFrame().setVisible(true);
+            if (!headless) {
+                // setVisible(true) is the ultimate AWT call. Skipping it
+                // in headless mode keeps the process alive after subsystems
+                // (including the HTTP server) have initialized.
+                ArgoFrame.getFrame().setVisible(true);
+            } else {
+                LOG.log(Level.INFO,
+                    "argouml.headless=true: HTTP server bound; window suppressed");
+            }
 
             st.mark("close splash");
             if (splash != null) {
@@ -427,6 +462,8 @@ public class Main {
         SubsystemUtility.initSubsystem(new InitStateDiagram());
         SubsystemUtility.initSubsystem(new InitClassDiagram());
         SubsystemUtility.initSubsystem(new InitUseCaseDiagram());
+        SubsystemUtility.initSubsystem(new InitAiSubsystem());
+        SubsystemUtility.initSubsystem(new InitHttpServerSubsystem());
         SubsystemUtility.initSubsystem(new InitUmlUI());
         SubsystemUtility.initSubsystem(new InitCheckListUI());
         SubsystemUtility.initSubsystem(new InitCognitiveUI());

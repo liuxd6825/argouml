@@ -81,6 +81,26 @@
     </dependency>
     <dependency>
       <groupId>org.argouml</groupId>
+      <artifactId>argouml-ai</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <!--
+      NanoHTTPD is used transitively via argouml-ai (argouml-ai declares
+      compile-scope dep on org.nanohttpd:nanohttpd:2.3.1). However, some
+      IDEs (notably IntelliJ IDEA) do not reliably resolve transitive
+      dependencies through reverse-dep modules. Declaring NanoHTTPD
+      here too ensures the runtime classpath always contains it,
+      regardless of how the IDE builds its module classpath.
+    -->
+    <dependency>
+      <groupId>org.nanohttpd</groupId>
+      <artifactId>nanohttpd</artifactId>
+      <version>2.3.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.argouml</groupId>
       <artifactId>argouml-umlpropertypanels</artifactId>
       <version>${project.version}</version>
       <scope>compile</scope>

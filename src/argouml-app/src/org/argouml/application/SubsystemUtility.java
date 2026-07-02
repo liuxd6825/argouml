@@ -62,19 +62,27 @@ public class SubsystemUtility {
     static void initSubsystem(InitSubsystem subsystem) {
         subsystem.init();
         for (GUISettingsTabInterface tab : subsystem.getSettingsTabs()) {
-            // TODO: This work should be deferred until actually 
+            // TODO: This work should be deferred until actually
             // needed for display
             GUI.getInstance().addSettingsTab(tab);
         }
         for (GUISettingsTabInterface tab : subsystem.getProjectSettingsTabs()) {
-            // TODO: This work should be deferred until actually 
+            // TODO: This work should be deferred until actually
             // needed for display
             GUI.getInstance().addProjectSettingsTab(tab);
         }
-        for (AbstractArgoJPanel tab : subsystem.getDetailsTabs()) {
-            /* All tabs are added at the end, except a TabToDoTarget: */
-            ((DetailsPane) ProjectBrowser.getInstance().getDetailsPane())
-                .addTab(tab, !(tab instanceof TabToDoTarget));
+        // ProjectBrowser.getInstance() returns null in argouml.headless
+        // mode (Main skips initializeGUI when -Dargouml.headless=true).
+        // ProjectBrowser.getInstance() has an `assert theInstance != null`
+        // which is disabled in production, so it returns null silently.
+        // Guard the details-tab hookup against that null so subsystems
+        // (including InitHttpServerSubsystem) can initialize under headless.
+        if (ProjectBrowser.getInstance() != null) {
+            for (AbstractArgoJPanel tab : subsystem.getDetailsTabs()) {
+                /* All tabs are added at the end, except a TabToDoTarget: */
+                ((DetailsPane) ProjectBrowser.getInstance().getDetailsPane())
+                    .addTab(tab, !(tab instanceof TabToDoTarget));
+            }
         }
     }
 

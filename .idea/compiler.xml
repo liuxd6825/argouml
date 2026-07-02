@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="argouml-diagrams-structure" />
+        <module name="argouml-mdr" />
+        <module name="argouml-euml" />
+        <module name="argouml-diagrams-class" />
+        <module name="argouml-model" />
+        <module name="argouml-build" />
+        <module name="argouml-i18n-zh" />
+        <module name="argouml" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="argouml-diagrams-activity" target="1.7" />
+      <module name="argouml-diagrams-deployment" target="1.7" />
+      <module name="argouml-diagrams-sequence" target="1.7" />
+      <module name="argouml-diagrams-state" target="1.7" />
+      <module name="argouml-i18n-zh-patch" target="1.7" />
+      <module name="argouml-notation" target="1.7" />
+      <module name="argouml-transformer" target="1.7" />
+      <module name="argouml-umlpropertypanels" target="1.7" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

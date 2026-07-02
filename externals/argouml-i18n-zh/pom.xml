@@ -1,0 +1,55 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.argouml</groupId>
+    <artifactId>parentpom</artifactId>
+    <version>0.35.5-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>argouml-i18n-zh</artifactId>
+  <version>0.35.2-SNAPSHOT</version>
+
+  <properties>
+    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
+  </properties>
+
+  <name>argouml-zh</name>
+  <description>
+Chinese localization for ArgoUML.
+Sources vendored from https://github.com/argouml-tigris-org/argouml-i18n-zh
+(last upstream commit 89ec572, 2022-08-21). Chinese characters are stored as
+\uXXXX escapes in ISO-8859-1-encoded .properties files (Java ResourceBundle
+standard).
+
+Drop this JAR on ArgoUML's classpath and start with
+-Duser.language=zh -Duser.country=CN to enable Simplified Chinese; use
+-Duser.country=TW for Traditional Chinese. Missing keys fall back to English
+automatically.
+  </description>
+
+  <build>
+    <!-- No Java sources; just resources. Bundle layout must end up as
+         org/argouml/i18n/*_zh_*.properties inside the JAR so that
+         org.argouml.i18n.Translator (which calls
+         ResourceBundle.getBundle("org.argouml.i18n.<name>", locale)) can find
+         them via the standard system classloader. -->
+    <resources>
+      <resource>
+        <directory>src</directory>
+        <targetPath>.</targetPath>
+        <includes>
+          <include>**/*.properties</include>
+          <include>**/*.txt</include>
+        </includes>
+      </resource>
+    </resources>
+  </build>
+
+  <scm>
+    <url>https://github.com/argouml-tigris-org/argouml-i18n-zh</url>
+  </scm>
+</project>
