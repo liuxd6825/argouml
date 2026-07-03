@@ -82,6 +82,34 @@ public abstract class AbstractDiagramElementOperations<T> {
     }
 
     /**
+     * Find the element on the diagram whose name equals {@code name}.
+     * A null/empty name yields null. Subclasses gate the type via
+     * {@link #isTargetType}.
+     *
+     * <p>This was the original lookup API before Phase A added
+     * {@link #findByUuid}; both remain available. {@code findByName}
+     * is convenient for human-facing flows; {@code findByUuid} is
+     * the safe choice when callers may have multiple elements with
+     * the same name in one namespace.</p>
+     */
+    public final T findByName(ArgoDiagram diagram, String name) {
+        if (name == null || name.isEmpty()) {
+            return null;
+        }
+        if (diagram == null) {
+            return null;
+        }
+        Facade facade = Model.getFacade();
+        for (Object node : diagram.getGraphModel().getNodes()) {
+            if (isTargetType(node)
+                    && name.equals(facade.getName(node))) {
+                return cast(node);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Find the element on the diagram whose ArgoUML UUID
      * (xmi.id) equals {@code uuid}. A null/empty uuid yields null.
      * Subclasses gate the type via {@link #isTargetType}.

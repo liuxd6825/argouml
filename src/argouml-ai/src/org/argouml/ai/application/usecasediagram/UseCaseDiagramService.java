@@ -653,6 +653,7 @@ public final class UseCaseDiagramService implements DiagramService {
             this.uuid = uuid == null ? "" : uuid;
             this.description = description == null ? "" : description;
             this.x = x;
+            this.y = y;
         }
     }
 

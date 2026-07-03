@@ -1,0 +1,416 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+    <relativePath/>
+  </parent>
+
+
+  <groupId>org.argouml</groupId>
+  <artifactId>parentpom</artifactId>
+  <!-- As of 2011-05-29 Linus Tolke has not figured out how this pom can be 
+       included in the automatic updates of the version number. Until that is resolved 
+       references to this pom need to updated manually when this changes and no 
+       snapshot versions are possible. -->
+  <version>0.35.5-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>parentpom</name>
+  <description>
+    The ArgoUML project contains separate projects for plugins.
+    This is the pom, the parentpom, or the ArgoUML super pom 
+    that contains the common parts of all ArgoUML projects.
+  </description>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>easymock</groupId>
+        <artifactId>easymock</artifactId>
+        <version>2.0</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>jdepend</groupId>
+        <artifactId>jdepend</artifactId>
+        <version>2.9.1</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+	<groupId>junit</groupId>
+	<artifactId>junit</artifactId>
+	<version>4.13.1</version>
+	<type>jar</type>
+	<scope>test</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <properties>
+    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
+    <compileSource>1.8</compileSource>
+    <github.site.org>https://github.com/argouml-tigris-org</github.site.org>
+    <gerrithub.site.org.ssh>ssh://review.gerrithub.io:29418/argouml-tigris-org</gerrithub.site.org.ssh>
+    <github.site.pages>https://argouml-tigris-org.github.io</github.site.pages>
+    <github.site.repositoryName>${project.artifactId}</github.site.repositoryName>
+    <jacoco.version>0.8.5</jacoco.version>
+  </properties>
+
+  <!-- Build Settings -->
+  <build>
+    <sourceDirectory>${project.basedir}/src</sourceDirectory>
+    <testSourceDirectory>${project.basedir}/tests</testSourceDirectory>
+    <resources>
+      <resource>
+	<directory>${project.basedir}/src</directory>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+	<directory>${project.basedir}/tests</directory>
+      </testResource>
+    </testResources>
+
+    <plugins>
+      <plugin>
+	<artifactId>maven-compiler-plugin</artifactId>
+	<version>2.3.1</version>
+	<configuration>
+	  <source>${compileSource}</source>
+	  <target>${compileSource}</target>
+	  <showDeprecation>false</showDeprecation>
+	  <showWarnings>true</showWarnings>
+	</configuration>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-surefire-plugin</artifactId>
+	<version>2.8.1</version>
+	<configuration>
+	  <forkMode>always</forkMode>
+	  <!-- systemPropertyValues does not work. Wrong version of maven? -->
+	  <systemProperties>
+	    <property>
+	      <name>test.model.uml</name>
+	      <value>../argouml-core-model-mdr/src/org/argouml/model/mdr/mof/01-02-15.xml</value>
+	    </property>
+	    <property>
+	      <name>java.awt.headless</name>
+	      <value>true</value>
+	    </property>
+	    <property>
+	      <name>log4j.configuration</name>
+	      <value>org/argouml/resource/default_console.lcf</value>
+	    </property>
+	  </systemProperties>
+	</configuration>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-source-plugin</artifactId>
+	<version>2.2.1</version>
+	<executions>
+	  <execution>
+	    <goals>
+	      <goal>jar</goal>
+	      <goal>test-jar</goal>
+	    </goals>
+	  </execution>
+	</executions>
+      </plugin>
+
+
+      <plugin>
+	<!-- The reason for having multiple copies of
+	     the checkstyle configuration is that the
+             solution to the Maven bug MSITE-443
+	     http://jira.codehaus.org/browse/MSITE-443
+	     doesn't work in Maven 3.0.4.
+	     Linus Tolke 2012-12-27.
+	-->
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-checkstyle-plugin</artifactId>
+	<version>2.9.1</version>
+	<configuration>
+	  <configLocation>checkstyle/checkstyle5_argouml.xml</configLocation>
+	</configuration>
+	<dependencies>
+	  <dependency>
+            <!-- When changing this, make sure to change the pluginRepository
+                 configuration among the pluginRepositories also below to fit
+                 with the changes.
+              -->
+	    <groupId>org.argouml</groupId>
+	    <artifactId>tools</artifactId>
+	    <version>0.35.2-SNAPSHOT</version>
+	  </dependency>
+	</dependencies>
+      </plugin>
+
+      <plugin>
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-assembly-plugin</artifactId>
+	<version>2.2-beta-2</version>
+      </plugin>
+
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>exec-maven-plugin</artifactId>
+	<version>1.2.1</version>
+	<configuration>
+	  <mainClass>org.argouml.application.Main</mainClass>
+	</configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <id>unpack-testmodels</id>
+            <phase>process-test-resources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.argouml</groupId>
+                  <artifactId>testmodels</artifactId>
+                  <version>0.35.2-SNAPSHOT</version>
+                  <type>jar</type>
+                  <overWrite>false</overWrite>
+                  <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.1</version>
+        <configuration>
+          <rules>
+            <requirePluginVersions/>
+          </rules>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>2.3</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.7</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.3.1</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.3</version>
+	<configuration>
+          <skipDeploy>true</skipDeploy>
+	</configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.4</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.8</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-publish-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <serverId>github</serverId>
+          <pubScmUrl>scm:git:${project.scm.url}</pubScmUrl>
+          <!-- There is a problem in jgit in that it can't delete files.
+               See https://issues.apache.org/jira/browse/SCM-925
+           -->
+          <skipDeletedFiles>true</skipDeletedFiles>
+          <scmBranch>gh-pages</scmBranch>
+          <providerImplementations>
+	    <git>jgit</git>
+	  </providerImplementations>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-api</artifactId>
+            <version>1.11.2</version>
+          </dependency>
+	  <dependency>
+	    <groupId>org.apache.maven.scm</groupId>
+	    <artifactId>maven-scm-provider-jgit</artifactId>
+            <version>1.11.2</version>
+	  </dependency>
+	</dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>publish-scm</goal>
+            </goals>
+            <phase>site-deploy</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <!-- attached to Maven test phase -->
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+  </build>
+
+  <reporting>
+    <plugins>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <!-- select non-aggregate reports -->
+              <report>report</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+        <configuration>
+          <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+        </configuration>
+      </plugin>
+
+      <plugin>
+	<!-- The reason for having multiple copies of
+	     the checkstyle configuration is that the
+             solution to the Maven bug MSITE-443
+	     http://jira.codehaus.org/browse/MSITE-443
+	     doesn't work in Maven 3.0.4.
+	     Linus Tolke 2012-12-27.
+	-->
+	<groupId>org.apache.maven.plugins</groupId>
+	<artifactId>maven-checkstyle-plugin</artifactId>
+	<version>2.9.1</version>
+	<configuration>
+	  <configLocation>checkstyle/checkstyle5_argouml.xml</configLocation>
+	</configuration>
+      </plugin>
+
+      <!--
+	  I noticed that findbugs is suddenly not working.
+	  Disabling until I can investigate.
+          2019-08-12 Linus Tolke
+	  <plugin>
+	  <groupId>org.codehaus.mojo</groupId>
+	  <artifactId>findbugs-maven-plugin</artifactId>
+	  <version>2.3.1</version>
+	  <configuration>
+	  <timeout>18000000</timeout>
+	  </configuration>
+	  </plugin>
+      -->
+
+      <plugin>
+	<groupId>org.codehaus.mojo</groupId>
+	<artifactId>jdepend-maven-plugin</artifactId>
+	<version>2.0-beta-2</version>
+      </plugin>
+    </plugins>
+  </reporting>
+
+  <!-- Environment Settings -->
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>${github.site.org}/${github.site.repositoryName}/issues</url>
+  </issueManagement>
+
+
+  <repositories>
+    <repository>
+      <id>argouml</id>
+      <name>ArgoUML-Provided Parts Repository (from Tigris)</name>
+      <layout>default</layout>
+      <url>${github.site.pages}/tigris/maven2</url>
+      <snapshots>
+	<enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <scm>
+    <url>${github.site.org}/${github.site.repositoryName}</url>
+    <connection>scm:git:${github.site.org}/${github.site.repositoryName}.git</connection>
+    <developerConnection>scm:git:${gerrithub.site.org.ssh}/${github.site.repositoryName}.git</developerConnection>
+  </scm>
+
+  <distributionManagement>
+    <site>
+        <id>site-docs</id>
+        <url>${github.site.pages}/${github.site.repositoryName}</url>
+    </site>
+  </distributionManagement>
+
+  <pluginRepositories>
+    <!-- When checkstyle attempts to find the org.argouml:tools it
+         doesn't use the normal repository definition but instead
+         the pluginRepository definition. For this reason it is
+         necessary to add the sonatype snapshot repository in this
+         way.
+         This trick was learned from
+         https://stackoverflow.com/questions/66592470/resolve-dependency-in-checkstyle-plugin
+     -->
+    <pluginRepository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </pluginRepository>
+  </pluginRepositories>
+
+</project>

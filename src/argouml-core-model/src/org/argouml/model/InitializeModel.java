@@ -38,15 +38,20 @@
 
 package org.argouml.model;
 
-import junit.framework.TestCase;
-
 /**
  * Class to initialize the model.
+ *
+ * <p>Originally lived in
+ * <code>argouml-core-model/tests/org/argouml/model/InitializeModel.java</code>
+ * where it was a JUnit-flavored helper. It has been promoted to a
+ * production class (no junit dependency) so that any module needing
+ * to initialize the Model subsystem from main/test code can call
+ * {@link #initializeDefault()} directly without a test classpath.
  *
  * @author lito
  */
 public final class InitializeModel {
-    
+
     /**
      * The default model implementation to start.
      */
@@ -59,7 +64,7 @@ public final class InitializeModel {
      */
     private InitializeModel() {
     }
-    
+
     /**
      * Initialize the Model subsystem with the default ModelImplementation.
      */
@@ -100,16 +105,18 @@ public final class InitializeModel {
             implType =
                 Class.forName(name);
         } catch (ClassNotFoundException e) {
-            TestCase.fail(e.toString());
-            return null;
+            throw new IllegalStateException(
+                    "Model implementation not found: " + name, e);
         }
 
         try {
             impl = (ModelImplementation) implType.newInstance();
         } catch (InstantiationException e) {
-            TestCase.fail(e.toString());
+            throw new IllegalStateException(
+                    "Cannot instantiate model implementation: " + name, e);
         } catch (IllegalAccessException e) {
-            TestCase.fail(e.toString());
+            throw new IllegalStateException(
+                    "Cannot access model implementation: " + name, e);
         }
         Model.setImplementation(impl);
         return impl;

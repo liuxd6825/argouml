@@ -79,11 +79,17 @@ content first.
   (commit `16e8048648`).
 - `src/argouml-app/src/bin/argouml2.{sh,bat}` are the modern launchers.
 - **Verified working combination**: Java 8 (Temurin x86_64, runs via Rosetta on arm64).
-  Parent POM hardcodes `<compileSource>1.7</compileSource>` and uses
-  `maven-compiler-plugin:2.3.1` — this combination breaks on Java 11
-  (mvn-compiler-plugin 2.3.1 doesn't emit `--release`, so `-source 1.7` fails
-  with "bootclasspath not set" on Java 11 javac). `-DcompileSource=1.8` triggers
-  a different bug (deprecation warnings become fatal).
+  Parent POM declares `<compileSource>1.8</compileSource>` and uses
+  `maven-compiler-plugin:2.3.1`. `<showDeprecation>` was flipped to `false`
+  to avoid deprecation-warnings-become-fatal on Java 8.
+  The parent POM is **vendored** at `parentpom-0.35.5-SNAPSHOT.pom` at the
+  project root; the root `pom.xml` references it via
+  `<relativePath>./parentpom-0.35.5-SNAPSHOT.pom</relativePath>`. The same
+  POM is installed into `~/.m2` via `mvn install:install-file` so modules
+  built standalone (e.g. `mvn -f src/argouml-ai/pom.xml ...`) resolve it
+  identically. `maven-compiler-plugin:2.3.1` doesn't emit `--release`, so
+  `-source 1.8` would fail on Java 11 javac with the same "bootclasspath
+  not set" error that `-source 1.7` did.
 - Java 17+ not tested; expected to fail for similar plugin-compat reasons.
 
 ### 8. **The `jar-with-dependencies` assembly is broken — does NOT include external deps**
@@ -303,10 +309,16 @@ src/main/java/org/argouml/ai/
    静态 API，**不要**让它们继承 `AbstractDiagramElementOperations`——它们的
    `build` 签名是 `(ownerClass, name, type, visibility)`，与基类的
    `(diagram, name)` 不兼容。
-4. **Pre-existing 编译问题**：`StandaloneHttpServer.java` 引用
-   `org.argouml.model.InitializeModel`，该包不在 `argouml-ai/pom.xml` 的
-   compile-scope。**临时绕开**：跑测试前 `mv` 该文件到 `/tmp/`。正式修复需在
-   `pom.xml` 加 `argouml-core-model` 依赖。
+4. **Pre-existing 编译问题（已修）**：`InitializeModel` 之前只存在于
+   `argouml-core-model/tests/`，未被编入 jar，导致 `StandaloneHttpServer.java`
+   （以及 20+ 测试文件）编译时找不到 `org.argouml.model.InitializeModel`。
+   **修复方式**：把 `InitializeModel.java` 从 `tests/` 移到
+   `src/org/argouml/model/`，去掉 `junit.framework.TestCase` 依赖，把
+   `TestCase.fail(e)` 替换成 `throw new IllegalStateException(..., e)`，让
+   它从测试 helper 变成 production class（与 `Model.java` 等同级）。
+   `argouml-core-model/tests/.../TestXmi.java` 仍按 §3 跳过编译。
+   `dont-run-the-tests/` 目录加了一个空占位符以满足 parent pom 中的
+   `<testSourceDirectory>` 路径引用。
 5. **新图类型成本**：仅需写 4-5 个文件（service + 4 个 domain ops +
    handler 注册），约 200 行代码。**禁止**复制已有 handler / ops / service
    的源码——必须继承抽象基类。
