@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.classdiagram.ClassDiagramService;
+import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
@@ -54,11 +55,11 @@ public final class UpdateClassHandler implements IRequestHandler {
         String diagramName = pathParams == null ? null : pathParams.get("d");
         String className = pathParams == null ? null : pathParams.get("c");
         Map<String, Object> json = JsonBodyReader.readMap(body);
-        String newName = JsonFields.strEmpty(json.get("newName"));
-        Integer x = JsonFields.intOpt(json.get("x"), 0);
-        Integer y = JsonFields.intOpt(json.get("y"), 0);
-        String stereotype = JsonFields.strEmpty(json.get("stereotype"));
-        Boolean isAbstract = JsonFields.boolOpt(json.get("isAbstract"), false);
+        String newName = HandlerJsonHelper.strEmpty(json.get("newName"));
+        Integer x = HandlerJsonHelper.intOpt(json.get("x"), 0);
+        Integer y = HandlerJsonHelper.intOpt(json.get("y"), 0);
+        String stereotype = HandlerJsonHelper.strEmpty(json.get("stereotype"));
+        Boolean isAbstract = HandlerJsonHelper.boolOpt(json.get("isAbstract"), false);
 
         ClassDiagramService.ClassElement ce = svc.updateClass(
                 diagramName, className, newName, x, y, stereotype, isAbstract);

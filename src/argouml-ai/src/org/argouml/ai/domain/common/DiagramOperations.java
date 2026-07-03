@@ -58,10 +58,8 @@ public final class DiagramOperations {
             throw new IllegalArgumentException(
                     "Diagram name must not be empty");
         }
-        if (kind == null || kind != ModelKind.CLASS) {
-            throw new IllegalArgumentException(
-                    "Unsupported diagram kind: " + kind
-                    + " (only CLASS is implemented in MVP)");
+        if (kind == null) {
+            kind = ModelKind.CLASS;
         }
         Project project = ProjectManager.getManager().getCurrentProject();
         if (project == null) {
@@ -82,6 +80,9 @@ public final class DiagramOperations {
         switch (kind) {
         case CLASS:
             d = new org.argouml.uml.diagram.static_structure.ui.UMLClassDiagram(name, ns);
+            break;
+        case USECASE:
+            d = new org.argouml.uml.diagram.use_case.ui.UMLUseCaseDiagram(name, ns);
             break;
         default:
             // unreachable: enforced above
@@ -164,6 +165,9 @@ public final class DiagramOperations {
         }
         if (d instanceof org.argouml.uml.diagram.static_structure.ui.UMLClassDiagram) {
             return ModelKind.CLASS;
+        }
+        if (d instanceof org.argouml.uml.diagram.use_case.ui.UMLUseCaseDiagram) {
+            return ModelKind.USECASE;
         }
         return null;
     }

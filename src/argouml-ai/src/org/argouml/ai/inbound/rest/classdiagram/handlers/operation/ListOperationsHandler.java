@@ -100,7 +100,7 @@ public final class ListOperationsHandler implements IRequestHandler {
             String diagramName, String className) {
         Map<String, String> out = new LinkedHashMap<String, String>();
         ArgoDiagram d = DiagramLocator.byName(diagramName);
-        Object cls = ClassOperations.findByName(d, className);
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(d, className);
         if (cls == null) {
             return out;
         }

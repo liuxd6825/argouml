@@ -78,6 +78,16 @@ import org.tigris.gef.presentation.Fig;
  */
 public final class ClassDiagramService implements DiagramService {
 
+    /**
+     * Shared per-service instance of {@link ClassOperations} so
+     * service code can call instance methods inherited from
+     * {@code AbstractDiagramElementOperations} without allocating
+     * a new object on every operation. Thread-safe via
+     * statelessness (the operations are pure functions on the
+     * model).
+     */
+    private static final ClassOperations CLASS_OPS = new ClassOperations();
+
     private static final String CODE_INVALID_NAME = "INVALID_NAME";
     private static final String CODE_INVALID_REL_TYPE =
             "INVALID_RELATIONSHIP_TYPE";
@@ -292,13 +302,23 @@ public final class ClassDiagramService implements DiagramService {
      *                                  already exists
      */
     public DiagramHandle createDiagram(String name) {
+        // Back-compat: defaults to this service's own kind (CLASS).
+        // New callers should pass a ModelKind explicitly.
+        return createDiagram(name, kind());
+    }
+
+    public DiagramHandle createDiagram(String name,
+                                        org.argouml.ai.domain.common.ModelKind mk) {
         if (name == null || name.isEmpty()) {
             throw new InvalidArgumentException("INVALID_NAME",
                     "Diagram name must not be empty");
         }
+        if (mk == null) {
+            mk = kind();
+        }
         try {
             org.argouml.uml.diagram.ArgoDiagram d =
-                org.argouml.ai.domain.common.DiagramOperations.create(name, kind());
+                org.argouml.ai.domain.common.DiagramOperations.create(name, mk);
             return new DiagramHandle(d.getName(),
                     kindOfWire(d));
         } catch (RuntimeException e) {
@@ -346,13 +366,18 @@ public final class ClassDiagramService implements DiagramService {
 
     private static String kindOfWire(org.argouml.uml.diagram.ArgoDiagram d) {
         // Match ListDiagramsHandler's convention: derive from the
-        // ArgoDiagram's concrete class simple name. UMLClassDiagram
-        // becomes "class" (not ModelKind.CLASS.wireValue() which is
-        // "classdiagram"). Future kinds: add a case here.
+        // ArgoDiagram's concrete class via DiagramOperations.kindOf
+        // (which now understands all ModelKind values), then return
+        // the short form ("class" / "usecase") used in API responses.
         if (d == null) {
             return "unknown";
         }
-        return "class";
+        org.argouml.ai.domain.common.ModelKind k =
+                org.argouml.ai.domain.common.DiagramOperations.kindOf(d);
+        if (k == null) {
+            return "class";
+        }
+        return k.shortKind();
     }
 
     /**
@@ -398,13 +423,13 @@ public final class ClassDiagramService implements DiagramService {
     private ClassElement createClassImpl(ArgoDiagram d, String name,
                                          int x, int y, String stereotype,
                                          boolean isAbstract) {
-        if (ClassOperations.findByName(d, name) != null) {
+        if (((ClassOperations) CLASS_OPS).findByName(d, name) != null) {
             throw new DuplicateException(CODE_DUPLICATE_CLASS,
                     "Class '" + name + "' already exists on diagram '"
                     + (d == null ? null : d.getName()) + "'");
         }
         try (UndoScope s = UndoScope.open("CreateClass:" + name)) {
-            Object cls = ClassOperations.build(d, name);
+            Object cls = ((ClassOperations) CLASS_OPS).build(d, name);
             if (isAbstract) {
                 ClassOperations.setAbstract(cls, true);
             }
@@ -451,7 +476,7 @@ public final class ClassDiagramService implements DiagramService {
         try (UndoScope s = UndoScope.open("UpdateClass:" + className)) {
             if (newName != null && !newName.isEmpty()
                     && !newName.equals(Model.getFacade().getName(cls))) {
-                if (ClassOperations.findByName(d, newName) != null) {
+                if (((ClassOperations) CLASS_OPS).findByName(d, newName) != null) {
                     throw new DuplicateException(CODE_DUPLICATE_CLASS,
                             "Class '" + newName
                             + "' already exists on diagram '"
@@ -493,7 +518,7 @@ public final class ClassDiagramService implements DiagramService {
     private void deleteClassImpl(ArgoDiagram d, String name) {
         Object cls = mustFindClass(d, name);
         try (UndoScope s = UndoScope.open("DeleteClass:" + name)) {
-            ClassOperations.delete(d, cls);
+            ((ClassOperations) CLASS_OPS).delete(d, cls);
         }
     }
 
@@ -1133,16 +1158,12 @@ public final class ClassDiagramService implements DiagramService {
     }
 
     private static ArgoDiagram mustFindDiagram(String name) {
-        try {
-            return DiagramLocator.byName(name);
-        } catch (DiagramLocator.DiagramNotFoundException e) {
-            throw new NotFoundException(CODE_DIAGRAM_NOT_FOUND,
-                    e.getMessage());
-        }
+        return org.argouml.ai.application.common.AbstractDiagramServiceHelper
+                .requireDiagram(name);
     }
 
     private static Object mustFindClass(ArgoDiagram d, String name) {
-        Object cls = ClassOperations.findByName(d, name);
+        Object cls = ((ClassOperations) CLASS_OPS).findByName(d, name);
         if (cls == null) {
             throw new NotFoundException(CODE_CLASS_NOT_FOUND,
                     "Class '" + name + "' not found");

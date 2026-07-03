@@ -63,7 +63,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperation() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         Object op = OperationOperations.build(cls, "cancel", null, null);
         assertNotNull(op);
         assertEquals("cancel", Model.getFacade().getName(op));
@@ -72,7 +72,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperationWithReturnType() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         Object op = OperationOperations.build(
                 cls, "total", "Money", null);
         assertNotNull(op);
@@ -89,7 +89,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperationWithVisibility() {
-        Object cls = ClassOperations.build(diagram, "C");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         Object priv = OperationOperations.build(
                 cls, "secret", null, "private");
         assertNotNull(priv);
@@ -99,7 +99,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperationWithNullNameThrows() {
-        Object cls = ClassOperations.build(diagram, "C");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         try {
             OperationOperations.build(cls, null, null, null);
             fail("expected IllegalArgumentException for null name");
@@ -109,7 +109,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperationWithEmptyNameThrows() {
-        Object cls = ClassOperations.build(diagram, "C");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         try {
             OperationOperations.build(cls, "", null, null);
             fail("expected IllegalArgumentException for empty name");
@@ -119,7 +119,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testBuildOperationAttachedToClass() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         Object op = OperationOperations.build(cls, "submit", null, null);
         List ops = Model.getFacade().getOperations(cls);
         assertNotNull("operations list should not be null", ops);
@@ -128,7 +128,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testFindByNameFindsExisting() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         OperationOperations.build(cls, "submit", null, null);
         Object found = OperationOperations.findByName(cls, "submit");
         assertNotNull(found);
@@ -136,28 +136,28 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testFindByNameMissingReturnsNull() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         OperationOperations.build(cls, "submit", null, null);
         assertNull(OperationOperations.findByName(cls, "missing"));
     }
 
     public void testFindByNameNullOrEmptyReturnsNull() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         OperationOperations.build(cls, "submit", null, null);
         assertNull(OperationOperations.findByName(cls, null));
         assertNull(OperationOperations.findByName(cls, ""));
     }
 
     public void testFindByNameWrongClassReturnsNull() {
-        Object c1 = ClassOperations.build(diagram, "C1");
-        Object c2 = ClassOperations.build(diagram, "C2");
+        Object c1 = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C1");
+        Object c2 = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C2");
         OperationOperations.build(c1, "submit", null, null);
         assertNull("should not find operation on a different class",
                 OperationOperations.findByName(c2, "submit"));
     }
 
     public void testDeleteRemovesOperation() {
-        Object cls = ClassOperations.build(diagram, "Order");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         Object op = OperationOperations.build(cls, "temp", null, null);
         OperationOperations.delete(cls, op);
         assertNull(OperationOperations.findByName(cls, "temp"));
@@ -167,7 +167,7 @@ public class TestOperationOperations extends TestCase {
     }
 
     public void testDeleteNullIsNoop() {
-        Object cls = ClassOperations.build(diagram, "C");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         OperationOperations.build(cls, "submit", null, null);
         int before = Model.getFacade().getOperations(cls).size();
         OperationOperations.delete(cls, null);

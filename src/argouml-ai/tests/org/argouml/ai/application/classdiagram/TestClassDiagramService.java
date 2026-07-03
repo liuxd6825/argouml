@@ -195,10 +195,10 @@ public class TestClassDiagramService extends TestCase {
         // model element should now carry the new name.
         assertEquals("New", Model.getFacade().getName(updated.element));
         assertNull("old name should no longer resolve",
-                org.argouml.ai.domain.classdiagram.ClassOperations.findByName(
+                new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(
                         diagram, "Old"));
         assertNotNull("new name should resolve",
-                org.argouml.ai.domain.classdiagram.ClassOperations.findByName(
+                new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(
                         diagram, "New"));
     }
 
@@ -240,7 +240,7 @@ public class TestClassDiagramService extends TestCase {
         svc.createClass(DIAGRAM, "Temp", 10, 20, null, false);
         svc.deleteClass(DIAGRAM, "Temp");
         assertNull("class should be gone",
-                org.argouml.ai.domain.classdiagram.ClassOperations.findByName(
+                new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(
                         diagram, "Temp"));
     }
 
@@ -631,7 +631,7 @@ public class TestClassDiagramService extends TestCase {
     // -----------------------------------------------------------------
 
     private Object lookupClassByName(String name) {
-        return org.argouml.ai.domain.classdiagram.ClassOperations.findByName(
+        return new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(
                 diagram, name);
     }
 }

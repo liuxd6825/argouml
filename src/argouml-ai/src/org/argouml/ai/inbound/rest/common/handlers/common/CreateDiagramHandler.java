@@ -22,13 +22,22 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
  * Handler for {@code POST /project/diagrams}. Body shape:
- * <pre>{ "name": "MyDiagram" }</pre>
- * (no kind in MVP — the registered service determines the kind;
- * only CLASS is wired in MVP via the {@code ClassDiagramService}).
+ * <pre>
+ *   {
+ *     "name": "MyDiagram",
+ *     "kind": "classdiagram"    // optional, default: "classdiagram"
+ *   }
+ * </pre>
+ * Supported {@code kind} values (see {@link org.argouml.ai.domain.common.ModelKind#wireValue()}):
+ * <ul>
+ *   <li>{@code "classdiagram"} — UML class diagram (default)</li>
+ *   <li>{@code "usecasediagram"} — UML use-case diagram</li>
+ * </ul>
  *
- * <p>Returns 201 + the new diagram's name and kind on success.
- * 400 on missing/empty name or bad JSON body; 409 if a diagram
- * with the same name already exists.</p>
+ * <p>Returns 201 + the new diagram's name and short kind
+ * (e.g. {@code "class"}, {@code "usecase"}) on success.
+ * 400 on missing/empty name, bad JSON body, or unknown kind;
+ * 409 if a diagram with the same name already exists.</p>
  */
 public final class CreateDiagramHandler implements IRequestHandler {
 
@@ -61,30 +70,27 @@ public final class CreateDiagramHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Field 'name' is required and must be non-empty"));
         }
-        ClassDiagramService.DiagramHandle h = svc.createDiagram(name);
+        // Parse optional `kind` (default: classdiagram). Throws on
+        // unknown wire values so the dispatcher maps to INVALID_NAME
+        // 400 with a clear message.
+        org.argouml.ai.domain.common.ModelKind mk;
+        Object kindRaw = json.get("kind");
+        if (kindRaw == null || kindRaw.toString().isEmpty()) {
+            mk = org.argouml.ai.domain.common.ModelKind.CLASS;
+        } else {
+            try {
+                mk = org.argouml.ai.domain.common.ModelKind
+                        .fromWireValue(kindRaw.toString());
+            } catch (IllegalArgumentException ex) {
+                return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
+                        "Unknown diagram kind '" + kindRaw + "'; "
+                        + "supported: classdiagram, usecasediagram"));
+            }
+        }
+        ClassDiagramService.DiagramHandle h = svc.createDiagram(name, mk);
         Map<String, Object> v = new LinkedHashMap<String, Object>();
         v.put("name", h.name);
-        // Match ListDiagramsHandler's convention: derive the kind from
-        // the ArgoDiagram's concrete class simple name
-        // (UMLClassDiagram -> "class"). Don't use ModelKind.wireValue()
-        // here — that returns "classdiagram" and would diverge from the
-        // existing list response shape.
-        v.put("kind", simpleKindOf(h));
+        v.put("kind", h.kind);
         return ResponseEnvelope.json(201, JsonWriter.ok(v));
-    }
-
-    private static String simpleKindOf(ClassDiagramService.DiagramHandle h) {
-        if (h == null) {
-            return "unknown";
-        }
-        // The handle carries the ArgoDiagram reference (via the
-        // service). We don't expose the ArgoDiagram to the REST
-        // layer, so the kind is derived from the canonical class
-        // simple name with the "UML" prefix and "Diagram" suffix
-        // stripped. Class diagram is the only kind in MVP so we
-        // hardcode "class" for the create response (consistent with
-        // the list handler's output for the same diagram).
-        // Future diagram kinds: switch on the ArgoDiagram class.
-        return "class";
     }
 }

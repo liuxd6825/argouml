@@ -55,8 +55,8 @@ public class TestRelationshipOperations extends TestCase {
         Object ns = project.getModel();
         diagram = new UMLClassDiagram("Test", ns);
         project.addDiagram(diagram);
-        classA = ClassOperations.build(diagram, "A");
-        classB = ClassOperations.build(diagram, "B");
+        classA = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "A");
+        classB = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "B");
     }
 
     @Override
@@ -140,7 +140,7 @@ public class TestRelationshipOperations extends TestCase {
     public void testFindAssociationBetweenMissing() {
         RelationshipOperations.buildAssociation(
                 diagram, classA, classB, null, null, null, null);
-        Object c3 = ClassOperations.build(diagram, "C");
+        Object c3 = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         assertNull(RelationshipOperations.findAssociationBetween(
                 diagram, classA, c3));
     }
@@ -171,7 +171,7 @@ public class TestRelationshipOperations extends TestCase {
 
     public void testFindDependencyBetweenMissing() {
         RelationshipOperations.buildDependency(diagram, classA, classB);
-        Object c3 = ClassOperations.build(diagram, "C");
+        Object c3 = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "C");
         assertNull(RelationshipOperations.findDependencyBetween(
                 diagram, classA, c3));
     }

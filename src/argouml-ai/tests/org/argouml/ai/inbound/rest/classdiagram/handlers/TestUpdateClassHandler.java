@@ -107,8 +107,7 @@ public class TestUpdateClassHandler extends TestCase {
                 new HashMap<String, String>(),
                 "{\"isAbstract\":true}");
         Facade f = Model.getFacade();
-        Object cls = org.argouml.ai.domain.classdiagram.ClassOperations
-                .findByName(diagram(), "Abs");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram(), "Abs");
         assertNotNull("class should still exist", cls);
         assertTrue("class should now be abstract", f.isAbstract(cls));
     }

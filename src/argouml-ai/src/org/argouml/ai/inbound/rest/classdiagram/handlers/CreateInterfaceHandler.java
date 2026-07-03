@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.classdiagram.ClassDiagramService;
+import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
@@ -53,10 +54,10 @@ public final class CreateInterfaceHandler implements IRequestHandler {
                                    String body) {
         String diagramName = pathParams == null ? null : pathParams.get("d");
         Map<String, Object> json = JsonBodyReader.readMap(body);
-        String name = JsonFields.strEmpty(json.get("name"));
-        int x = JsonFields.intVal(json.get("x"), DEFAULT_X);
-        int y = JsonFields.intVal(json.get("y"), DEFAULT_Y);
-        String stereotype = JsonFields.strEmpty(json.get("stereotype"));
+        String name = HandlerJsonHelper.strEmpty(json.get("name"));
+        int x = HandlerJsonHelper.intVal(json.get("x"), DEFAULT_X);
+        int y = HandlerJsonHelper.intVal(json.get("y"), DEFAULT_Y);
+        String stereotype = HandlerJsonHelper.strEmpty(json.get("stereotype"));
 
         Object iface = svc.createInterface(
                 diagramName, name, x, y, stereotype);

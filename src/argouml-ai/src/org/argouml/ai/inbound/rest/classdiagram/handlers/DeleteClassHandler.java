@@ -7,38 +7,29 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-
 package org.argouml.ai.inbound.rest.classdiagram.handlers;
 
-import java.util.Map;
-
 import org.argouml.ai.application.classdiagram.ClassDiagramService;
-import org.argouml.ai.inbound.rest.common.IRequestHandler;
-import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.inbound.rest.common.handlers.AbstractDeleteHandler;
 
 /**
- * Handler for {@code DELETE /d/{d}/classes/{c}}. Returns 204 with
- * an empty body on success. A missing class or diagram surfaces
- * as 404 via the standard exception-to-status mapping.
+ * Handler for {@code DELETE /d/{d}/classes/{c}}. Returns 204 on
+ * success.
  */
-public final class DeleteClassHandler implements IRequestHandler {
-
-    private final ClassDiagramService svc;
+public final class DeleteClassHandler
+        extends AbstractDeleteHandler<ClassDiagramService> {
 
     public DeleteClassHandler(ClassDiagramService svc) {
-        if (svc == null) {
-            throw new IllegalArgumentException("svc");
-        }
-        this.svc = svc;
+        super(svc);
     }
 
     @Override
-    public ResponseEnvelope handle(Map<String, String> pathParams,
-                                   Map<String, String> queryParams,
-                                   String body) {
-        String diagramName = pathParams == null ? null : pathParams.get("d");
-        String className = pathParams == null ? null : pathParams.get("c");
-        svc.deleteClass(diagramName, className);
-        return ResponseEnvelope.json(204, "");
+    protected String idPathKey() {
+        return "c";
+    }
+
+    @Override
+    protected void doDelete(String diagram, String className) {
+        service.deleteClass(diagram, className);
     }
 }

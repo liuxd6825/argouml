@@ -142,7 +142,7 @@ public class TestClassEndpoints extends TestHttpServerIntegrationBase {
         // placeFig(d, cls, 100, 100) on the resulting node. The Fig
         // bounds track the top-left of the rendered class box; GEF
         // may add a 1-2 pixel slop, hence the tolerance.
-        Object cls = ClassOperations.findByName(diagram, "C");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "C");
         assertNotNull("class C should be present on the diagram", cls);
         Fig fig = diagram.presentationFor(cls);
         assertNotNull("Fig for C should exist", fig);
@@ -232,7 +232,7 @@ public class TestClassEndpoints extends TestHttpServerIntegrationBase {
                 "{\"x\":300,\"y\":400}");
         assertEquals("position update should be 200, got " + put.status
                 + " body: " + put.body, 200, put.status);
-        Object cls = ClassOperations.findByName(diagram, "A");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "A");
         assertNotNull("class A should be present on the diagram", cls);
         Fig fig = diagram.presentationFor(cls);
         assertNotNull("Fig for A should exist", fig);
@@ -346,7 +346,7 @@ public class TestClassEndpoints extends TestHttpServerIntegrationBase {
                 get.body.contains("\"name\":\"A\""));
         // The class element must still be findable on the diagram
         // (so we know the PUT did not detach or destroy it).
-        Object cls = ClassOperations.findByName(diagram, "A");
+        Object cls = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "A");
         assertNotNull("class A should still be present", cls);
         Fig fig = diagram.presentationFor(cls);
         assertNotNull("Fig for A should still exist", fig);

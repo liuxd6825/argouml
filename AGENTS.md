@@ -165,6 +165,7 @@ test time.
 | `src/argouml-core-diagrams-state2/` | Thin wrapper around legacy state diagram, gated on UML 2. |
 | `src/argouml-core-diagrams-deployment2/` | Same pattern as state2. |
 | `src/argouml-build/` | POM-only assembly module. `mvn package` here = fat jar. |
+| `src/argouml-ai/` | AI 子系统 HTTP REST API（基于 NanoHTTPD），含 30+ 端点服务于类图。**不在根 reactor 中**；需独立构建。详见下方"argouml-ai REST API"小节。 |
 
 ## Architecture landmarks
 
@@ -197,6 +198,133 @@ test time.
 - **Property panels**: declarative. `argouml-core-umlpropertypanels/meta/*.xml`
   describe panel layout per UML metatype. `MetaDataCache` picks `metamodel.xml`
   vs `metamodel2.xml` based on `Model.getFacade().getUmlVersion()`.
+
+## argouml-ai REST API (src/argouml-ai/)
+
+通过 `Main.java:466` 的
+`SubsystemUtility.initSubsystem(new InitHttpServerSubsystem())`
+接入主程序，启动时执行一次。路由在启动时**只读一次**，新增端点
+必须重启 JVM 才能生效。
+
+### 故意不加入根 reactor
+
+`argouml-ai` 被排除在根 `pom.xml` 的 `<modules>` 之外，因为它
+**编译期依赖 `argouml-app`**，加入会形成循环依赖。需用 `-f` 显式
+构建：
+
+```bash
+mvn -f src/argouml-ai/pom.xml -am test                                       # 全部 665 个测试
+mvn -f src/argouml-ai/pom.xml -am test -Dtest=TestCleanupDatatypes          # 单个测试
+mvn -f src/argouml-ai/pom.xml -am install -DskipTests -o                     # 发布到 ~/.m2
+```
+
+### 包分层规则（按图类型划分）
+
+**每种图类型（`class` / `usecase` / `sequence` / `state` ...）
+必须包含 3 个对称子包 + 1 个 handlers 子包。** 现有 `classdiagram`
+是模板——新增图类型时复制其结构：
+
+```
+src/main/java/org/argouml/ai/
+├── application/
+│   ├── <kind>/                       ← <Kind>DiagramService
+│   └── common/                       ← DiagramService 接口、异常、注册表
+├── domain/
+│   ├── <kind>/                       ← <Element>Operations（纯 model 操作）
+│   └── common/                       ← DiagramOperations、DiagramLocator、ModelKind
+├── inbound/rest/
+│   ├── <kind>/                       ← （可选聚合路径）
+│   │   └── handlers/
+│   │       └── <subarea>/            ← Get/Create/Delete*Handler
+│   └── common/                       ← Router、Dispatcher、IRequestHandler
+└── infrastructure/                  ← JSON、NanoHTTPD、UndoScope、EDT
+```
+
+测试在 `src/argouml-ai/tests/.../<同路径>/` 镜像此结构。
+
+### 新增图类型（例如 `usecasediagram`）
+
+5 处文件改动 + 3 个新子包：
+
+1. `ModelKind`（`domain/common/ModelKind.java`）：加
+   `USECASE("usecasediagram")` 枚举值。
+2. `DiagramOperations.create()` 和 `kindOf()`
+   （`domain/common/DiagramOperations.java`）：加 `case` 分支和
+   `instanceof` 识别 `UMLUseCaseDiagram`。
+3. `DiagramServices`（`application/common/DiagramServices.java`）：
+   在 static 块加
+   `REG.register(ModelKind.USECASE, new UseCaseDiagramService());`。
+4. 3 个新子包：
+   - `application/usecasediagram/UseCaseDiagramService.java`
+     （实现 `DiagramService`，返回 `ModelKind.USECASE`）
+   - `domain/usecasediagram/{Actor,UseCase,Include,Extend}Operations.java`
+   - `inbound/rest/usecasediagram/handlers/{actor,usecase,relationship}/`
+5. 在 `InitHttpServerSubsystem.buildRouter()` 注册路由。
+   **无需改 Main.java**——现有 `InitHttpServerSubsystem.init()` 自动加载新路由。
+
+### 在已有图类型上新增端点
+
+1. 新建 `inbound/rest/<kind>/handlers/<subarea>/MyHandler.java`，
+   实现 `IRequestHandler`（一个方法 `handle(pathParams, queryParams, body)`
+   返回 `ResponseEnvelope`）。构造函数注入该 kind 的 service 实例。
+2. 在 `InitHttpServerSubsystem.buildRouter()` 加
+   `router.add(Method.VERB, "/path", new MyHandler(svc));`。
+3. JUnit 3 测试在
+   `tests/.../inbound/rest/<kind>/handlers/<subarea>/` 继承 `TestCase`。
+   `setUp()` 必须调 `InitializeModel.initializeDefault()`，并在
+   `Project.makeEmptyProject()` 上创建新的 `UMLClassDiagram`。
+4. **重启 JVM**——`InitHttpServerSubsystem.init()` 只在启动跑一次；
+   新增路由需要进程重启。
+
+### argouml-ai 抽象基类与编码规则
+
+按图类型分层后，**所有新代码必须优先复用现有 5 个抽象基类**：
+
+| 基类 | 位置 | 用途 | 子类需实现 |
+|---|---|---|---|
+| `AbstractDiagramElementOperations<T>` | `domain/common/` | 节点（Class/Actor/UseCase）的 build / findByName / delete / setPosition | `buildImpl(diagram, name)` + `isTargetType(node)` |
+| `AbstractDiagramServiceHelper` | `application/common/` | 共享 `requireDiagram(name)` + `requireNonEmptyName(name)` | 无（静态方法） |
+| `HandlerJsonHelper` | `inbound/rest/common/` | 共享 JSON 解析：`strEmpty` / `intVal` / `boolVal` | 无（静态方法） |
+| `AbstractListHandler<S, V>` | `inbound/rest/common/handlers/` | `GET /d/{d}/<kind>s` 列表 | `doList(diagram)` + `toView(view)` |
+| `AbstractDeleteHandler<S>` | `inbound/rest/common/handlers/` | `DELETE /d/{d}/<kind>s/{name}` | `idPathKey()` + `doDelete(diagram, name)` |
+| `AbstractDiagramHandlerTestCase` | `tests/.../inbound/rest/common/` | JUnit 3 setUp/tearDown + `pp()` / `ppWithId()` | `createDiagram(name, namespace)` |
+
+**编码规则**：
+
+1. **静态方法 vs 实例方法**：抽象基类提供**实例**方法。子类 service / handler 内部
+   用 `private static final XxxOps INSTANCE = new XxxOps();` 共享实例，调用
+   `((XxxOps) INSTANCE).findByName(d, name)`。**不要**在子类里
+   把继承的实例方法再次声明为 `static`（会编译错误）。
+2. **属性持久化（Description）**：通过 ArgoUML tagged value 机制
+   (`ExtensionMechanismsFactory.createTaggedValue()`) 写入。当前 MDR
+   build **不保证**回读，因此服务读取时为 `""`。
+3. **私有构造器保留**：`AttributeOperations` / `OperationOperations` /
+   `InterfaceOperations` / `RelationshipOperations` 保留 `private` 构造器 +
+   静态 API，**不要**让它们继承 `AbstractDiagramElementOperations`——它们的
+   `build` 签名是 `(ownerClass, name, type, visibility)`，与基类的
+   `(diagram, name)` 不兼容。
+4. **Pre-existing 编译问题**：`StandaloneHttpServer.java` 引用
+   `org.argouml.model.InitializeModel`，该包不在 `argouml-ai/pom.xml` 的
+   compile-scope。**临时绕开**：跑测试前 `mv` 该文件到 `/tmp/`。正式修复需在
+   `pom.xml` 加 `argouml-core-model` 依赖。
+5. **新图类型成本**：仅需写 4-5 个文件（service + 4 个 domain ops +
+   handler 注册），约 200 行代码。**禁止**复制已有 handler / ops / service
+   的源码——必须继承抽象基类。
+6. **测试**：所有 handler 测试必须继承 `AbstractDiagramHandlerTestCase`
+   （提供 setUp / tearDown / `pp()` / `ppWithId()`），子类只需实现
+   `createDiagram(name, namespace)` 一个方法。
+
+**未来图类型（State/Sequence/Activity）实施模板**：
+
+1. `domain.<kind>.<Element>Operations extends AbstractDiagramElementOperations<Object>`
+   实现两个抽象方法（~30 行）
+2. `application.<kind>.<Kind>DiagramService implements DiagramService` 用
+   `AbstractDiagramServiceHelper.requireDiagram()` + `private static final XxxOps`
+3. handler 全部继承 `AbstractListHandler` / `AbstractDeleteHandler`
+4. `DiagramServices` 静态块加 `REG.register(...)`（1 行）
+5. `InitHttpServerSubsystem` 注册路由（每端点 1 行）
+
+**零重复代码**——预计每种新图类型 < 300 行实现 + < 200 行测试。
 
 ## Build & test commands
 
@@ -270,10 +398,12 @@ mvn -pl src/argouml-app test -Dtest=TestProject
 | Add a design rule (critic) | new `CrXxx.java` extending `CrUML` + i18n `CrXxx.properties` + register in one of the 3 Profile classes above |
 | Add a property-panel field | edit `core-umlpropertypanels/meta/<Type>.xml` (pure XML, no Java) |
 | Add a menu / toolbar action | new `ui/cmd/ActionXxx.java` + wire into `InitUiCmdSubsystem` |
-| Add a new diagram type | new `uml/diagram/x/` package + `InitXxxDiagram` + append to `Main.java:418-432` |
+| Add a new diagram type | UML 侧：新建 `uml/diagram/x/` 包 + `InitXxxDiagram` + 追加到 `Main.java:418-432`。**AI REST 侧：见上文"argouml-ai REST API"小节。** |
 | Add a notation provider | new `notation/providers/uml/XxxNotationUml.java` + register in `InitNotationUml` |
 | Add a standalone extension | new `modules/my-module/` (Ant build, deploy to `ext/`) |
 | Add a JUnit 3 test | `tests/org/argouml/.../TestXxx.java` extending `TestCase`; `setUp()` **must** call `InitializeModel.initializeDefault()` |
+| 新增 AI REST 端点 | new `inbound/rest/<kind>/handlers/<subarea>/MyHandler.java` 实现 `IRequestHandler` + 在 `InitHttpServerSubsystem.buildRouter()` 注册 + 加 JUnit 3 测试 |
+| 新增 AI 图类型 | 按上文"argouml-ai REST API"小节中 5 步流程——修改 `ModelKind`、`DiagramOperations`、`DiagramServices`，加 3 个新子包 |
 
 ## Git workflow
 

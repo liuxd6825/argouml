@@ -100,7 +100,7 @@ public class TestDeleteClassHandler extends TestCase {
         new DeleteClassHandler(svc).handle(pp,
                 new HashMap<String, String>(), "");
         assertNull("class should be gone",
-                org.argouml.ai.domain.classdiagram.ClassOperations.findByName(
+                new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(
                         org.argouml.ai.domain.common.DiagramLocator.byName(DIAGRAM), "Temp"));
     }
 
@@ -130,16 +130,18 @@ public class TestDeleteClassHandler extends TestCase {
         }
     }
 
-    public void testEmptyClassNameThrowsInvalidArgument() {
+    public void testEmptyClassNameReturns400() {
+        // The Delete handler now returns a 400 INVALID_NAME JSON
+        // envelope rather than throwing — the dispatcher still
+        // surfaces the envelope to the client. We assert the
+        // status and code directly.
         Map<String, String> pp = new HashMap<String, String>();
         pp.put("d", DIAGRAM);
         pp.put("c", "");
-        try {
-            new DeleteClassHandler(svc).handle(pp,
-                    new HashMap<String, String>(), "");
-            fail("expected InvalidArgumentException for empty class name");
-        } catch (InvalidArgumentException expected) {
-            assertEquals("INVALID_NAME", expected.code());
-        }
+        ResponseEnvelope env = new DeleteClassHandler(svc).handle(
+                pp, new HashMap<String, String>(), "");
+        assertEquals(400, env.status);
+        assertTrue("body must mention INVALID_NAME: " + env.body,
+                env.body.contains("INVALID_NAME"));
     }
 }

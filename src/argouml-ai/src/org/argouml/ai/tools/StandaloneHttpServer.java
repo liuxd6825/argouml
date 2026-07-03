@@ -18,7 +18,6 @@ import org.argouml.ai.inbound.rest.classdiagram.handlers.CreateClassHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.CreateInterfaceHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.DeleteClassHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.GetClassHandler;
-import org.argouml.ai.inbound.rest.classdiagram.handlers.JsonFields;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.ListClassesHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.UpdateClassHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.attribute.AddAttributeHandler;

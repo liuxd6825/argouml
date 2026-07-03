@@ -11,6 +11,7 @@
 package org.argouml.ai.application.common;
 
 import org.argouml.ai.application.classdiagram.ClassDiagramService;
+import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
 import org.argouml.ai.domain.common.ModelKind;
 
 /**
@@ -36,6 +37,7 @@ public final class DiagramServices {
 
     static {
         REG.register(ModelKind.CLASS, new ClassDiagramService());
+        REG.register(ModelKind.USECASE, new UseCaseDiagramService());
     }
 
     private DiagramServices() {
@@ -54,5 +56,13 @@ public final class DiagramServices {
      */
     public static ClassDiagramService classSvc() {
         return (ClassDiagramService) REG.forKind(ModelKind.CLASS).get();
+    }
+
+    /**
+     * Convenience accessor for the use-case diagram service. Throws
+     * NPE on mis-configuration.
+     */
+    public static UseCaseDiagramService useCaseSvc() {
+        return (UseCaseDiagramService) REG.forKind(ModelKind.USECASE).get();
     }
 }

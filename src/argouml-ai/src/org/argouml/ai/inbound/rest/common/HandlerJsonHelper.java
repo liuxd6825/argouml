@@ -7,45 +7,47 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
+package org.argouml.ai.inbound.rest.common;
 
-package org.argouml.ai.inbound.rest.classdiagram.handlers;
+import org.argouml.ai.infrastructure.json.JsonBodyReader;
 
 /**
- * Small package-private helpers for reading typed values out of the
- * JSON body map produced by {@code JsonBodyReader}. The dispatcher
- * already rejects empty / malformed bodies, but every handler in this
- * directory still needs to coerce {@code Object} values into typed
- * primitives - {@code int}, {@code boolean}, and {@code String} -
- * without throwing on a missing or wrong-typed field.
+ * Small helpers for reading typed values out of a JSON body map
+ * produced by {@link JsonBodyReader}. Promoted from
+ * {@code classdiagram.handlers.JsonFields} so all REST handlers
+ * (class, use case, future kinds) can share a single source of
+ * truth for JSON coercion.
  *
  * <p>Helpers follow a "default on miss" policy so that callers can
  * write the natural-looking code:</p>
  * <pre>
- *   int x = JsonFields.intVal(json.get("x"), 100);
+ *   int x = HandlerJsonHelper.intVal(json.get("x"), 100);
  * </pre>
  * <p>and never have to special-case missing keys.</p>
  */
-public final class JsonFields {
+public final class HandlerJsonHelper {
 
-    private JsonFields() {
+    private HandlerJsonHelper() {
     }
 
-    static String str(Object o) {
+    /** @return null when {@code o} is null, otherwise
+     *  {@code o.toString()}. */
+    public static String str(Object o) {
         return o == null ? null : o.toString();
     }
 
-    /**
-     * @return null when the field is null, missing, or an empty
-     *         string; otherwise the string value. Used for fields
-     *         where "present and empty" should be treated the same
-     *         as "absent" (e.g. optional stereotype).
-     */
-    static String strEmpty(Object o) {
+    /** @return null when the field is null, missing, or an empty
+     *  string; otherwise the string value. Used for fields where
+     *  "present and empty" should be treated the same as "absent"
+     *  (e.g. optional stereotype). */
+    public static String strEmpty(Object o) {
         String s = str(o);
         return (s == null || s.isEmpty()) ? null : s;
     }
 
-    static int intVal(Object o, int dflt) {
+    /** @return the int value, or {@code dflt} when the field is
+     *  absent or malformed. */
+    public static int intVal(Object o, int dflt) {
         if (o == null) {
             return dflt;
         }
@@ -59,13 +61,11 @@ public final class JsonFields {
         }
     }
 
-    /**
-     * @return null when the field is absent; otherwise the int value
-     *         (or {@code dflt} when present but malformed). Used by
-     *         {@code UpdateClassHandler} so "not present" can be
-     *         distinguished from "explicitly zero".
-     */
-    static Integer intOpt(Object o, int dflt) {
+    /** @return null when the field is absent; otherwise the int
+     *  value (or {@code dflt} when present but malformed). Used by
+     *  PUT handlers so "not present" can be distinguished from
+     *  "explicitly zero". */
+    public static Integer intOpt(Object o, int dflt) {
         if (o == null) {
             return null;
         }
@@ -79,7 +79,7 @@ public final class JsonFields {
         }
     }
 
-    static boolean boolVal(Object o, boolean dflt) {
+    public static boolean boolVal(Object o, boolean dflt) {
         if (o == null) {
             return dflt;
         }
@@ -89,12 +89,9 @@ public final class JsonFields {
         return Boolean.parseBoolean(o.toString());
     }
 
-    /**
-     * @return null when the field is absent; otherwise the boolean
-     *         value (or {@code dflt} when present but malformed).
-     *         Used by {@code UpdateClassHandler}.
-     */
-    static Boolean boolOpt(Object o, boolean dflt) {
+    /** @return null when the field is absent; otherwise the boolean
+     *  value (or {@code dflt} when present but malformed). */
+    public static Boolean boolOpt(Object o, boolean dflt) {
         if (o == null) {
             return null;
         }

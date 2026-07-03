@@ -19,16 +19,28 @@ package org.argouml.ai.domain.common;
  * {@code application.<kind>} diagram-service registrations.
  */
 public enum ModelKind {
-    CLASS("classdiagram");
+    CLASS("classdiagram", "class"),
+    USECASE("usecasediagram", "usecase");
 
     private final String wire;
+    private final String shortKind;
 
-    ModelKind(String wire) {
+    ModelKind(String wire, String shortKind) {
         this.wire = wire;
+        this.shortKind = shortKind;
     }
 
     public String wireValue() {
         return wire;
+    }
+
+    /**
+     * Short form used in API responses (e.g. {@code "class"}, {@code "usecase"}).
+     * Distinct from {@link #wireValue()} which is the longer URL segment
+     * ({@code "classdiagram"}, {@code "usecasediagram"}).
+     */
+    public String shortKind() {
+        return shortKind;
     }
 
     public static ModelKind fromWireValue(String s) {

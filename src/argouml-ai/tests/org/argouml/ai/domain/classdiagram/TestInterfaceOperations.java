@@ -105,7 +105,7 @@ public class TestInterfaceOperations extends TestCase {
     }
 
     public void testFindByNameSkipsClasses() {
-        ClassOperations.build(diagram, "NotInterface");
+        new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "NotInterface");
         assertNull("must not return a class", InterfaceOperations.findByName(
                 diagram, "NotInterface"));
     }

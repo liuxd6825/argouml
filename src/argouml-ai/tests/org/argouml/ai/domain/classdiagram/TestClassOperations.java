@@ -82,14 +82,14 @@ public class TestClassOperations extends TestCase {
     }
 
     public void testBuildClass() {
-        Object c = ClassOperations.build(diagram, "Order");
+        Object c = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
         assertNotNull(c);
         assertEquals("Order", Model.getFacade().getName(c));
     }
 
     public void testBuildClassWithNullNameThrows() {
         try {
-            ClassOperations.build(diagram, null);
+            new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, null);
             fail("expected IllegalArgumentException for null name");
         } catch (IllegalArgumentException expected) {
             // expected
@@ -98,7 +98,7 @@ public class TestClassOperations extends TestCase {
 
     public void testBuildClassWithEmptyNameThrows() {
         try {
-            ClassOperations.build(diagram, "");
+            new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "");
             fail("expected IllegalArgumentException for empty name");
         } catch (IllegalArgumentException expected) {
             // expected
@@ -106,37 +106,37 @@ public class TestClassOperations extends TestCase {
     }
 
     public void testFindByNameFindsExisting() {
-        ClassOperations.build(diagram, "Customer");
-        Object found = ClassOperations.findByName(diagram, "Customer");
+        new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Customer");
+        Object found = new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "Customer");
         assertNotNull(found);
         assertEquals("Customer", Model.getFacade().getName(found));
     }
 
     public void testFindByNameMissingReturnsNull() {
-        ClassOperations.build(diagram, "Order");
-        assertNull(ClassOperations.findByName(diagram, "Missing"));
+        new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
+        assertNull(new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "Missing"));
     }
 
     public void testFindByNameNullOrEmptyReturnsNull() {
-        ClassOperations.build(diagram, "Order");
-        assertNull(ClassOperations.findByName(diagram, null));
-        assertNull(ClassOperations.findByName(diagram, ""));
+        new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Order");
+        assertNull(new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, null));
+        assertNull(new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, ""));
     }
 
     public void testDeleteRemovesFromGraphAndModel() {
-        Object c = ClassOperations.build(diagram, "Temp");
-        ClassOperations.delete(diagram, c);
-        assertNull(ClassOperations.findByName(diagram, "Temp"));
+        Object c = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Temp");
+        new org.argouml.ai.domain.classdiagram.ClassOperations().delete(diagram, c);
+        assertNull(new org.argouml.ai.domain.classdiagram.ClassOperations().findByName(diagram, "Temp"));
     }
 
     public void testRenameChangesName() {
-        Object c = ClassOperations.build(diagram, "Old");
+        Object c = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Old");
         ClassOperations.rename(c, "New");
         assertEquals("New", Model.getFacade().getName(c));
     }
 
     public void testSetAbstractTogglesFlag() {
-        Object c = ClassOperations.build(diagram, "Abs");
+        Object c = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Abs");
         ClassOperations.setAbstract(c, true);
         assertTrue("isAbstract true", Model.getFacade().isAbstract(c));
         ClassOperations.setAbstract(c, false);
@@ -144,7 +144,7 @@ public class TestClassOperations extends TestCase {
     }
 
     public void testAddStereotypeAttaches() {
-        Object c = ClassOperations.build(diagram, "Sty");
+        Object c = new org.argouml.ai.domain.classdiagram.ClassOperations().build(diagram, "Sty");
         ClassOperations.addStereotype(c, "entity");
         Collection stereos = Model.getFacade().getStereotypes(c);
         assertNotNull("stereotypes collection should not be null", stereos);
