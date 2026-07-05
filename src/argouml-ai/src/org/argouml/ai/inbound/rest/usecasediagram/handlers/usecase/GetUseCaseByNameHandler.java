@@ -16,20 +16,20 @@ import org.argouml.ai.domain.entity.UseCaseEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
-import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code PUT /d/{d}/usecasediagram/usecases/by-name/{u}}.
- * Body: {@code {"x": int, "y": int}}. Returns 200 with the moved
- * {@link UseCaseEntity}.
+ * Handler for {@code GET /d/{d}/usecasediagram/usecases/by-name/{u}}.
+ *
+ * <p>Returns 200 with the full {@link UseCaseEntity}, or 404
+ * USECASE_NOT_FOUND.</p>
  */
-public final class MoveUseCaseHandler implements IRequestHandler {
+public final class GetUseCaseByNameHandler implements IRequestHandler {
 
     private final UseCaseDiagramService svc;
 
-    public MoveUseCaseHandler(UseCaseDiagramService svc) {
+    public GetUseCaseByNameHandler(UseCaseDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -44,30 +44,9 @@ public final class MoveUseCaseHandler implements IRequestHandler {
         String name = pathParams == null ? null : pathParams.get("u");
         if (name == null || name.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "UseCase name required"));
+                    "UseCase name required in path"));
         }
-        Map<String, Object> json;
-        try {
-            json = JsonBodyReader.readMap(body);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    ex.getMessage()));
-        }
-        Object xo = json == null ? null : json.get("x");
-        Object yo = json == null ? null : json.get("y");
-        if (xo == null || yo == null) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    "Both 'x' and 'y' are required"));
-        }
-        int x, y;
-        try {
-            x = Integer.parseInt(xo.toString());
-            y = Integer.parseInt(yo.toString());
-        } catch (NumberFormatException ex) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    "x and y must be integers"));
-        }
-        UseCaseEntity v = svc.setUseCasePosition(diagram, name, x, y);
+        UseCaseEntity v = svc.getUseCaseByName(diagram, name);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

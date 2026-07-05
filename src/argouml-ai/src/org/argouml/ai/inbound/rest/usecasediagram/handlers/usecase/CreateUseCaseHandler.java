@@ -9,13 +9,14 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.UseCaseEntity;
 import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
@@ -28,10 +29,14 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
  *   { "name": "Login", "description": "...", "x": 200, "y": 100 }
  * </pre>
  *
- * <p>Description persistence to the model layer is best-effort;
- * the service accepts the field but the round-trip to ArgoUML's
- * tagged-value storage is not guaranteed on every MDR build.
- * Returns 201 with name on success.</p>
+ * <p>Returns 201 with the full {@link UseCaseEntity} on success
+ * (entity contains {@code uuid, name, kind, description,
+ * diagramUuid, x, y}).</p>
+ *
+ * <p>Description persistence to the ArgoUML model layer is
+ * best-effort; the entity returned at create time carries the
+ * value the caller supplied, but a subsequent find/get may yield
+ * {@code ""}.</p>
  */
 public final class CreateUseCaseHandler implements IRequestHandler {
 
@@ -69,13 +74,8 @@ public final class CreateUseCaseHandler implements IRequestHandler {
                 ? null : json.get("description").toString();
         int x = HandlerJsonHelper.intVal(json.get("x"), 0);
         int y = HandlerJsonHelper.intVal(json.get("y"), 0);
-        UseCaseDiagramService.UseCaseView v =
-                svc.createUseCase(diagram, name, desc, x, y);
-        Map<String, Object> out = new LinkedHashMap<String, Object>();
-        out.put("name", v.name);
-        out.put("description", v.description);
-        out.put("x", v.x);
-        out.put("y", v.y);
-        return ResponseEnvelope.json(201, JsonWriter.ok(out));
+        UseCaseEntity v = svc.createUseCase(diagram, name, desc, x, y);
+        return ResponseEnvelope.json(201,
+                JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

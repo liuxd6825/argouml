@@ -16,20 +16,25 @@ import org.argouml.ai.domain.entity.ActorEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
-import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code PUT /d/{d}/usecasediagram/actors/by-name/{a}}.
- * Body: {@code {"x": int, "y": int}}. Returns 200 with the moved
- * {@link ActorEntity} (entity reflects the new x/y).
+ * Handler for {@code GET /d/{d}/usecasediagram/actors/by-name/{a}}.
+ *
+ * <p>Returns 200 with the full {@link ActorEntity}, or 404
+ * ACTOR_NOT_FOUND when no actor with that name exists on the
+ * named diagram.</p>
+ *
+ * <p>The {@code /by-name/} prefix disambiguates from the
+ * {@code /{uuid}} route — name-routes carry the explicit prefix,
+ * uuid-routes occupy the bare slot.</p>
  */
-public final class MoveActorHandler implements IRequestHandler {
+public final class GetActorByNameHandler implements IRequestHandler {
 
     private final UseCaseDiagramService svc;
 
-    public MoveActorHandler(UseCaseDiagramService svc) {
+    public GetActorByNameHandler(UseCaseDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -44,30 +49,9 @@ public final class MoveActorHandler implements IRequestHandler {
         String name = pathParams == null ? null : pathParams.get("a");
         if (name == null || name.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "Actor name required"));
+                    "Actor name required in path"));
         }
-        Map<String, Object> json;
-        try {
-            json = JsonBodyReader.readMap(body);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    ex.getMessage()));
-        }
-        Object xo = json == null ? null : json.get("x");
-        Object yo = json == null ? null : json.get("y");
-        if (xo == null || yo == null) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    "Both 'x' and 'y' are required"));
-        }
-        int x, y;
-        try {
-            x = Integer.parseInt(xo.toString());
-            y = Integer.parseInt(yo.toString());
-        } catch (NumberFormatException ex) {
-            return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
-                    "x and y must be integers"));
-        }
-        ActorEntity v = svc.setActorPosition(diagram, name, x, y);
+        ActorEntity v = svc.getActorByName(diagram, name);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

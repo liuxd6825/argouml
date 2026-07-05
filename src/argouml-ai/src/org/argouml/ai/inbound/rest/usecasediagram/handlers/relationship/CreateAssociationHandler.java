@@ -12,8 +12,10 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.AssociationEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
@@ -21,7 +23,9 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code POST /d/{d}/usecasediagram/associations}.
  * Body: {@code {"actor": "...", "usecase": "..."}}.
- * 201 with {@code {id, actor, usecase}} on success.
+ * Returns 201 with the new {@link AssociationEntity} (entity
+ * contains {@code uuid, name (null), kind="association", id,
+ * actorUuid, actorName, usecaseUuid, usecaseName, diagramUuid}).
  */
 public final class CreateAssociationHandler implements IRequestHandler {
 
@@ -39,7 +43,7 @@ public final class CreateAssociationHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        java.util.Map<String, Object> json;
+        Map<String, Object> json;
         try {
             json = JsonBodyReader.readMap(body);
         } catch (IllegalArgumentException ex) {
@@ -52,13 +56,13 @@ public final class CreateAssociationHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'actor' and 'usecase' fields are required"));
         }
-        Map<String, Object> result = svc.createAssociation(
-                diagram, actor, usecase);
-        return ResponseEnvelope.json(201, JsonWriter.ok(result));
+        AssociationEntity result =
+                svc.createAssociation(diagram, actor, usecase);
+        return ResponseEnvelope.json(201,
+                JsonWriter.ok(EntityJson.toMap(result)));
     }
 
-    private static String strField(java.util.Map<String, Object> json,
-                                    String name) {
+    private static String strField(Map<String, Object> json, String name) {
         if (json == null) {
             return null;
         }

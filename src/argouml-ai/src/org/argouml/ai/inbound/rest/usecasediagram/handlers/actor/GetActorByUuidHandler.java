@@ -9,24 +9,33 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.ActorEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/actors/{a}}.
- * Returns 200 with the actor's name + position, 404 ACTOR_NOT_FOUND.
+ * Handler for {@code GET /d/{d}/usecasediagram/actors/{uuid}}.
+ *
+ * <p>Looks up an actor by its ArgoUML UUID (xmi.id). This is the
+ * safe way to address an element when multiple actors may share a
+ * name in the same namespace. Returns 200 with the full
+ * {@link ActorEntity}, or 404 ACTOR_NOT_FOUND.</p>
+ *
+ * <p>The {@code {uuid}} path segment occupies the bare slot in
+ * the actor sub-route; name lookups use {@code /by-name/{name}}.
+ * A request whose path segment is empty yields 400 INVALID_NAME.</p>
  */
-public final class GetActorHandler implements IRequestHandler {
+public final class GetActorByUuidHandler implements IRequestHandler {
 
     private final UseCaseDiagramService svc;
 
-    public GetActorHandler(UseCaseDiagramService svc) {
+    public GetActorByUuidHandler(UseCaseDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -38,16 +47,12 @@ public final class GetActorHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        String name = pathParams == null ? null : pathParams.get("a");
-        if (name == null || name.isEmpty()) {
+        String uuid = pathParams == null ? null : pathParams.get("uuid");
+        if (uuid == null || uuid.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "Actor name required in path"));
+                    "Actor uuid required in path"));
         }
-        UseCaseDiagramService.ActorView v = svc.getActor(diagram, name);
-        Map<String, Object> out = new LinkedHashMap<String, Object>();
-        out.put("name", v.name);
-        out.put("x", v.x);
-        out.put("y", v.y);
-        return ResponseEnvelope.json(200, JsonWriter.ok(out));
+        ActorEntity v = svc.findActorByUuid(diagram, uuid);
+        return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

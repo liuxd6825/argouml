@@ -14,6 +14,28 @@ import fi.iki.elonen.NanoHTTPD;
 import fi.iki.elonen.NanoHTTPD.Response;
 import org.argouml.ai.application.classdiagram.ClassDiagramService;
 import org.argouml.ai.application.common.DiagramServices;
+import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.CreateActorHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.DeleteActorByNameHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.DeleteActorByUuidHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.GetActorByNameHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.GetActorByUuidHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.ListActorsHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.actor.MoveActorHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.CreateAssociationHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.CreateExtendHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.CreateIncludeHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.DeleteAssociationHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.DeleteExtendHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.DeleteIncludeHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship.ListUseCaseAssociationsHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.CreateUseCaseHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCaseByNameHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCaseByUuidHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByNameHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByUuidHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCasesHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.MoveUseCaseHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.CreateClassHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.CreateInterfaceHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.DeleteClassHandler;
@@ -153,9 +175,12 @@ public final class StandaloneHttpServer {
     }
 
     /**
-     * Build the same 25 routes as {@code InitHttpServerSubsystem}.
+     * Build the same routes as {@code InitHttpServerSubsystem}.
      * Kept in sync by hand; if a route is added/removed there,
-     * update this method too.
+     * update this method too. (Phase 4 added 17 usecase routes which
+     * were initially missing here — see AGENTS.md §"Pre-existing 编译问题
+     * StandaloneHttpServer §8a". The entity refactor added 4 more
+     * usecase by-uuid routes — Actor + UseCase × GET/DELETE.)
      */
     static Router buildRouter() {
         Router router = new Router();
@@ -163,6 +188,12 @@ public final class StandaloneHttpServer {
         // single class-diagram service for every classdiagram/* handler
         // AND for the project-level CreateDiagramHandler
         ClassDiagramService svc = DiagramServices.classSvc();
+
+        // single use-case-diagram service for every
+        // /d/{d}/usecasediagram/* handler. Mirrored from
+        // InitHttpServerSubsystem so this standalone server exposes
+        // the same MVP route surface as the production server.
+        UseCaseDiagramService ucSvc = DiagramServices.useCaseSvc();
 
         // common (project-scoped) routes
         router.add(Method.GET, "/health", new HealthHandler());
@@ -206,6 +237,54 @@ public final class StandaloneHttpServer {
         router.add(Method.GET,    "/d/{d}/dependencies",     new ListDependenciesHandler(svc));
         router.add(Method.POST,   "/d/{d}/dependencies",     new AddDependencyHandler(svc));
         router.add(Method.DELETE, "/d/{d}/relationships/{id}", new DeleteRelationshipHandler(svc));
+
+        // Use-case diagram API (entity-based; mirrored from
+        // InitHttpServerSubsystem)
+        // Actor CRUD
+        router.add(Method.POST, "/d/{d}/usecasediagram/actors",
+                new CreateActorHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/actors",
+                new ListActorsHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/actors/by-name/{a}",
+                new GetActorByNameHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/actors/{uuid}",
+                new GetActorByUuidHandler(ucSvc));
+        router.add(Method.PUT, "/d/{d}/usecasediagram/actors/by-name/{a}",
+                new MoveActorHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/actors/by-name/{a}",
+                new DeleteActorByNameHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/actors/{uuid}",
+                new DeleteActorByUuidHandler(ucSvc));
+        // UseCase CRUD
+        router.add(Method.POST, "/d/{d}/usecasediagram/usecases",
+                new CreateUseCaseHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/usecases",
+                new ListUseCasesHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/usecases/by-name/{u}",
+                new GetUseCaseByNameHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/usecases/{uuid}",
+                new GetUseCaseByUuidHandler(ucSvc));
+        router.add(Method.PUT, "/d/{d}/usecasediagram/usecases/by-name/{u}",
+                new MoveUseCaseHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/usecases/by-name/{u}",
+                new DeleteUseCaseByNameHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/usecases/{uuid}",
+                new DeleteUseCaseByUuidHandler(ucSvc));
+        // Relationships
+        router.add(Method.POST, "/d/{d}/usecasediagram/associations",
+                new CreateAssociationHandler(ucSvc));
+        router.add(Method.GET, "/d/{d}/usecasediagram/associations",
+                new ListUseCaseAssociationsHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/associations/{id}",
+                new DeleteAssociationHandler(ucSvc));
+        router.add(Method.POST, "/d/{d}/usecasediagram/includes",
+                new CreateIncludeHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/includes/{id}",
+                new DeleteIncludeHandler(ucSvc));
+        router.add(Method.POST, "/d/{d}/usecasediagram/extends",
+                new CreateExtendHandler(ucSvc));
+        router.add(Method.DELETE, "/d/{d}/usecasediagram/extends/{id}",
+                new DeleteExtendHandler(ucSvc));
 
         return router;
     }

@@ -9,24 +9,25 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.JsonError;
-import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/usecases/{u}}.
- * Returns 200 with name + description + position, 404 USECASE_NOT_FOUND.
+ * Handler for {@code DELETE /d/{d}/usecasediagram/usecases/{uuid}}.
+ *
+ * <p>Deletes a use case by its ArgoUML UUID. Returns 204 on
+ * success, 404 USECASE_NOT_FOUND when the uuid doesn't match any
+ * use case on the named diagram.</p>
  */
-public final class GetUseCaseHandler implements IRequestHandler {
+public final class DeleteUseCaseByUuidHandler implements IRequestHandler {
 
     private final UseCaseDiagramService svc;
 
-    public GetUseCaseHandler(UseCaseDiagramService svc) {
+    public DeleteUseCaseByUuidHandler(UseCaseDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -38,17 +39,12 @@ public final class GetUseCaseHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        String name = pathParams == null ? null : pathParams.get("u");
-        if (name == null || name.isEmpty()) {
+        String uuid = pathParams == null ? null : pathParams.get("uuid");
+        if (uuid == null || uuid.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "UseCase name required in path"));
+                    "UseCase uuid required in path"));
         }
-        UseCaseDiagramService.UseCaseView v = svc.getUseCase(diagram, name);
-        Map<String, Object> out = new LinkedHashMap<String, Object>();
-        out.put("name", v.name);
-        out.put("description", v.description);
-        out.put("x", v.x);
-        out.put("y", v.y);
-        return ResponseEnvelope.json(200, JsonWriter.ok(out));
+        svc.deleteUseCaseByUuid(diagram, uuid);
+        return ResponseEnvelope.json(204, "");
     }
 }

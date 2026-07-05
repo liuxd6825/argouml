@@ -9,37 +9,36 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.ActorEntity;
+import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.inbound.rest.common.handlers.AbstractListHandler;
+import org.argouml.ai.infrastructure.json.EntityJson;
+import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
  * Handler for {@code GET /d/{d}/usecasediagram/actors}.
+ *
+ * <p>Returns 200 with a JSON array of {@link ActorEntity} objects
+ * (each containing {@code uuid, name, kind, diagramUuid, x, y}).</p>
  */
 public final class ListActorsHandler
-        extends AbstractListHandler<UseCaseDiagramService,
-                                   UseCaseDiagramService.ActorView> {
+        extends AbstractListHandler<UseCaseDiagramService, ActorEntity> {
 
     public ListActorsHandler(UseCaseDiagramService svc) {
         super(svc);
     }
 
     @Override
-    protected List<UseCaseDiagramService.ActorView> doList(String diagram) {
+    protected List<ActorEntity> doList(String diagram) {
         return service.listActors(diagram);
     }
 
     @Override
-    protected Map<String, Object> toView(
-            UseCaseDiagramService.ActorView a) {
-        Map<String, Object> m = new LinkedHashMap<String, Object>();
-        m.put("name", a.name);
-        m.put("x", a.x);
-        m.put("y", a.y);
-        return m;
+    protected Map<String, Object> toView(ActorEntity a) {
+        return EntityJson.toMap(a);
     }
 }

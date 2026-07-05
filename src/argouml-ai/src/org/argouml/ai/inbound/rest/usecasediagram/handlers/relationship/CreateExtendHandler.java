@@ -12,16 +12,22 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.ExtendEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
  * Handler for {@code POST /d/{d}/usecasediagram/extends}.
- * Body: {@code {"base": "...", "extension": "...", "extensionPoint": "..."}}.
- * 201 with {@code {id, base, extension, extensionPoint}} on success.
+ * Body: {@code {"base": "...", "extension": "...",
+ * "extensionPoint": "..."}}.
+ * Returns 201 with the new {@link ExtendEntity} (entity
+ * contains {@code uuid, name (null), kind="extend", id,
+ * baseUuid, baseName, extensionUuid, extensionName,
+ * extensionPoint, diagramUuid}).
  */
 public final class CreateExtendHandler implements IRequestHandler {
 
@@ -39,7 +45,7 @@ public final class CreateExtendHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        java.util.Map<String, Object> json;
+        Map<String, Object> json;
         try {
             json = JsonBodyReader.readMap(body);
         } catch (IllegalArgumentException ex) {
@@ -53,13 +59,13 @@ public final class CreateExtendHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'base' and 'extension' fields are required"));
         }
-        Map<String, Object> result = svc.createExtend(
-                diagram, base, extension, point);
-        return ResponseEnvelope.json(201, JsonWriter.ok(result));
+        ExtendEntity result =
+                svc.createExtend(diagram, base, extension, point);
+        return ResponseEnvelope.json(201,
+                JsonWriter.ok(EntityJson.toMap(result)));
     }
 
-    private static String strField(java.util.Map<String, Object> json,
-                                    String name) {
+    private static String strField(Map<String, Object> json, String name) {
         if (json == null) {
             return null;
         }

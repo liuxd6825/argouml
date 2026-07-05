@@ -9,13 +9,14 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.ActorEntity;
 import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
@@ -28,10 +29,10 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
  *   { "name": "User", "x": 100, "y": 60 }
  * </pre>
  *
- * <p>Returns 201 with the new actor's name on success. Error codes:
- * 400 INVALID_NAME (empty name), 409 DUPLICATE_ACTOR (already exists),
- * 404 DIAGRAM_NOT_FOUND, 400 UNSUPPORTED_DIAGRAM_TYPE (non-use-case
- * diagram).</p>
+ * <p>Returns 201 with the full {@link ActorEntity} on success
+ * (entity contains {@code uuid, name, kind, diagramUuid, x, y}).
+ * 400 INVALID_NAME / INVALID_BODY on bad input, 409
+ * DUPLICATE_ACTOR on name collision, 404 DIAGRAM_NOT_FOUND.</p>
  */
 public final class CreateActorHandler implements IRequestHandler {
 
@@ -67,11 +68,8 @@ public final class CreateActorHandler implements IRequestHandler {
         }
         int x = HandlerJsonHelper.intVal(json.get("x"), 0);
         int y = HandlerJsonHelper.intVal(json.get("y"), 0);
-        UseCaseDiagramService.ActorView v = svc.createActor(diagram, name, x, y);
-        Map<String, Object> out = new LinkedHashMap<String, Object>();
-        out.put("name", v.name);
-        out.put("x", v.x);
-        out.put("y", v.y);
-        return ResponseEnvelope.json(201, JsonWriter.ok(out));
+        ActorEntity v = svc.createActor(diagram, name, x, y);
+        return ResponseEnvelope.json(201,
+                JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

@@ -12,8 +12,10 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
+import org.argouml.ai.domain.entity.IncludeEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
@@ -21,7 +23,9 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code POST /d/{d}/usecasediagram/includes}.
  * Body: {@code {"base": "...", "inclusion": "..."}}.
- * 201 with {@code {id, base, inclusion}} on success.
+ * Returns 201 with the new {@link IncludeEntity} (entity
+ * contains {@code uuid, name (null), kind="include", id,
+ * baseUuid, baseName, inclusionUuid, inclusionName, diagramUuid}).
  */
 public final class CreateIncludeHandler implements IRequestHandler {
 
@@ -39,7 +43,7 @@ public final class CreateIncludeHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        java.util.Map<String, Object> json;
+        Map<String, Object> json;
         try {
             json = JsonBodyReader.readMap(body);
         } catch (IllegalArgumentException ex) {
@@ -52,13 +56,13 @@ public final class CreateIncludeHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'base' and 'inclusion' fields are required"));
         }
-        Map<String, Object> result = svc.createInclude(
-                diagram, base, inclusion);
-        return ResponseEnvelope.json(201, JsonWriter.ok(result));
+        IncludeEntity result =
+                svc.createInclude(diagram, base, inclusion);
+        return ResponseEnvelope.json(201,
+                JsonWriter.ok(EntityJson.toMap(result)));
     }
 
-    private static String strField(java.util.Map<String, Object> json,
-                                    String name) {
+    private static String strField(Map<String, Object> json, String name) {
         if (json == null) {
             return null;
         }

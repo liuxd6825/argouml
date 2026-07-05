@@ -116,6 +116,18 @@ java -Xms64m -Xmx1024m -cp \
 
 A pre-made launcher exists at `src/argouml-app/src/bin/run-argouml.sh`.
 
+### 8a. `StandaloneHttpServer.java` 与 `InitHttpServerSubsystem.java` 维护两份 router
+两份代码各有一份 `buildRouter()`,原 Javadoc 注明 _"Kept in sync by hand; if a
+route is added/removed there, update this method too"_。Phase 4 在 InitHttpServerSubsystem
+加了 17 个 usecase 路由(`/d/{d}/usecasediagram/{actors,usecases,...}`),StandaloneHttpServer
+没跟上。症状:启动 `StandaloneHttpServer` 后访问
+`POST /d/{d}/usecasediagram/actors` 返回 404 ROUTE_NOT_FOUND,smoke test 全部失败。
+
+修复:在 `StandaloneHttpServer.java:160 buildRouter()` 内,先取
+`UseCaseDiagramService ucSvc = DiagramServices.useCaseSvc();`,再 import 14 个 usecase
+handler 类,然后末尾追加 17 行 `router.add(Method.X, "/d/{d}/usecasediagram/...", new ...)`。
+mirror `InitHttpServerSubsystem.java:259-296`。
+
 ## Execution gotchas
 
 ### Sequence diagram won't open if `-Dargouml.modules=` is missing
