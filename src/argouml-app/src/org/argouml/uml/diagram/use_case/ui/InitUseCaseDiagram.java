@@ -44,6 +44,8 @@ import java.util.List;
 import org.argouml.application.api.AbstractArgoJPanel;
 import org.argouml.application.api.GUISettingsTabInterface;
 import org.argouml.application.api.InitSubsystem;
+import org.argouml.ui.ContextActionFactoryManager;
+import org.argouml.ui.UseCaseContextPopupFactory;
 import org.argouml.uml.ui.PropPanelFactory;
 import org.argouml.uml.ui.PropPanelFactoryManager;
 
@@ -70,6 +72,9 @@ public class InitUseCaseDiagram implements InitSubsystem {
         /* Set up the property panels for use case diagrams: */
         PropPanelFactory diagramFactory = new UseCaseDiagramPropPanelFactory();
         PropPanelFactoryManager.addPropPanelFactory(diagramFactory);
+
+        ContextActionFactoryManager.addContextPopupFactory(
+                new UseCaseContextPopupFactory());
     }
 
 }
