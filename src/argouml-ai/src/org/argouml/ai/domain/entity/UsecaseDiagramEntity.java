@@ -18,15 +18,15 @@ package org.argouml.ai.domain.entity;
  * {@code kind} field for client-side discrimination. The two
  * are not equivalent: this entity is returned by entity-shaped
  * endpoints, the latter is returned by the project-listing
- * endpoint.</p>
+ * endpoint.</p>c
  */
-public final class UseCaseDiagramEntity implements DiagramEntity {
+public final class UsecaseDiagramEntity implements DiagramEntity {
 
     private final String uuid;
     private final String name;
     private final String namespace;
 
-    public UseCaseDiagramEntity(String uuid, String name, String namespace) {
+    public UsecaseDiagramEntity(String uuid, String name, String namespace) {
         this.uuid = uuid == null ? "" : uuid;
         this.name = name;
         this.namespace = namespace == null ? "" : namespace;
