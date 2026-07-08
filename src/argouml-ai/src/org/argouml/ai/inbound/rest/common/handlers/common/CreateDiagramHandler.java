@@ -84,7 +84,7 @@ public final class CreateDiagramHandler implements IRequestHandler {
             } catch (IllegalArgumentException ex) {
                 return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                         "Unknown diagram kind '" + kindRaw + "'; "
-                        + "supported: classdiagram, usecasediagram"));
+                        + "supported: classdiagram, usecasediagram, sequencediagram"));
             }
         }
         ClassDiagramService.DiagramHandle h = svc.createDiagram(name, mk);

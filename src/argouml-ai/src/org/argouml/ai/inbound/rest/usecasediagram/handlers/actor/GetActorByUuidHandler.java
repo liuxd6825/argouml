@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.ActorEntity;
+import org.argouml.ai.domain.entity.UsecaseActorEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -25,7 +25,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
  * <p>Looks up an actor by its ArgoUML UUID (xmi.id). This is the
  * safe way to address an element when multiple actors may share a
  * name in the same namespace. Returns 200 with the full
- * {@link ActorEntity}, or 404 ACTOR_NOT_FOUND.</p>
+ * {@link UsecaseActorEntity}, or 404 ACTOR_NOT_FOUND.</p>
  *
  * <p>The {@code {uuid}} path segment occupies the bare slot in
  * the actor sub-route; name lookups use {@code /by-name/{name}}.
@@ -52,7 +52,7 @@ public final class GetActorByUuidHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Actor uuid required in path"));
         }
-        ActorEntity v = svc.findActorByUuid(diagram, uuid);
+        UsecaseActorEntity v = svc.findActorByUuid(diagram, uuid);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

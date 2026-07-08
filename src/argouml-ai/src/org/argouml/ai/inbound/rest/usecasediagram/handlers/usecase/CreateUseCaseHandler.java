@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UseCaseEntity;
+import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
@@ -29,7 +29,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
  *   { "name": "Login", "description": "...", "x": 200, "y": 100 }
  * </pre>
  *
- * <p>Returns 201 with the full {@link UseCaseEntity} on success
+ * <p>Returns 201 with the full {@link UsecaseUseCaseEntity} on success
  * (entity contains {@code uuid, name, kind, description,
  * diagramUuid, x, y}).</p>
  *
@@ -74,7 +74,7 @@ public final class CreateUseCaseHandler implements IRequestHandler {
                 ? null : json.get("description").toString();
         int x = HandlerJsonHelper.intVal(json.get("x"), 0);
         int y = HandlerJsonHelper.intVal(json.get("y"), 0);
-        UseCaseEntity v = svc.createUseCase(diagram, name, desc, x, y);
+        UsecaseUseCaseEntity v = svc.createUseCase(diagram, name, desc, x, y);
         return ResponseEnvelope.json(201,
                 JsonWriter.ok(EntityJson.toMap(v)));
     }

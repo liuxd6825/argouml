@@ -18,7 +18,7 @@ package org.argouml.ai.domain.entity;
  * read. The create-time value is preserved in the entity returned
  * by the create call, but a subsequent find/get may yield {@code ""}.</p>
  */
-public final class UseCaseEntity implements ElementEntity {
+public final class UsecaseUseCaseEntity implements ElementEntity {
 
     private final String uuid;
     private final String name;
@@ -27,7 +27,7 @@ public final class UseCaseEntity implements ElementEntity {
     private final int x;
     private final int y;
 
-    public UseCaseEntity(String uuid, String name, String description,
+    public UsecaseUseCaseEntity(String uuid, String name, String description,
                          String diagramUuid, int x, int y) {
         this.uuid = uuid == null ? "" : uuid;
         this.name = name;

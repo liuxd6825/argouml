@@ -97,6 +97,13 @@
     </dependency>
     <dependency>
       <groupId>org.argouml</groupId>
+      <artifactId>argouml-diagrams-sequence</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.argouml</groupId>
       <artifactId>argouml-mdr</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

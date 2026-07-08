@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UseCaseEntity;
+import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -23,7 +23,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code PUT /d/{d}/usecasediagram/usecases/by-name/{u}}.
  * Body: {@code {"x": int, "y": int}}. Returns 200 with the moved
- * {@link UseCaseEntity}.
+ * {@link UsecaseUseCaseEntity}.
  */
 public final class MoveUseCaseHandler implements IRequestHandler {
 
@@ -67,7 +67,7 @@ public final class MoveUseCaseHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_BODY",
                     "x and y must be integers"));
         }
-        UseCaseEntity v = svc.setUseCasePosition(diagram, name, x, y);
+        UsecaseUseCaseEntity v = svc.setUseCasePosition(diagram, name, x, y);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

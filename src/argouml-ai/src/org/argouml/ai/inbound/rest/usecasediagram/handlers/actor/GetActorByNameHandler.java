@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.ActorEntity;
+import org.argouml.ai.domain.entity.UsecaseActorEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -22,7 +22,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code GET /d/{d}/usecasediagram/actors/by-name/{a}}.
  *
- * <p>Returns 200 with the full {@link ActorEntity}, or 404
+ * <p>Returns 200 with the full {@link UsecaseActorEntity}, or 404
  * ACTOR_NOT_FOUND when no actor with that name exists on the
  * named diagram.</p>
  *
@@ -51,7 +51,7 @@ public final class GetActorByNameHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Actor name required in path"));
         }
-        ActorEntity v = svc.getActorByName(diagram, name);
+        UsecaseActorEntity v = svc.getActorByName(diagram, name);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

@@ -13,14 +13,16 @@ package org.argouml.ai.domain.common;
 /**
  * Enumeration of UML diagram kinds the server understands. The wire
  * value is the lowercase path segment used in REST URLs (for example
- * {@code /api/v1/diagrams/classdiagram/MyClass}). YAGNI: only CLASS
- * is implemented; other kinds (usecase, sequence, activity, state,
- * deployment) slot in alongside the {@code domain.<kind>} and
- * {@code application.<kind>} diagram-service registrations.
+ * {@code /api/v1/diagrams/classdiagram/MyClass}). CLASS, USECASE, and
+ * SEQUENCE are wired (Phase 1 / Phase 2 of argouml-ai); ACTIVITY,
+ * STATE, and DEPLOYMENT slot in alongside the
+ * {@code domain.<kind>} and {@code application.<kind>}
+ * diagram-service registrations.
  */
 public enum ModelKind {
     CLASS("classdiagram", "class"),
-    USECASE("usecasediagram", "usecase");
+    USECASE("usecasediagram", "usecase"),
+    SEQUENCE("sequencediagram", "sequence");
 
     private final String wire;
     private final String shortKind;

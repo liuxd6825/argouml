@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.IncludeEntity;
+import org.argouml.ai.domain.entity.UsecaseIncludeEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -23,7 +23,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code POST /d/{d}/usecasediagram/includes}.
  * Body: {@code {"base": "...", "inclusion": "..."}}.
- * Returns 201 with the new {@link IncludeEntity} (entity
+ * Returns 201 with the new {@link UsecaseIncludeEntity} (entity
  * contains {@code uuid, name (null), kind="include", id,
  * baseUuid, baseName, inclusionUuid, inclusionName, diagramUuid}).
  */
@@ -56,7 +56,7 @@ public final class CreateIncludeHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'base' and 'inclusion' fields are required"));
         }
-        IncludeEntity result =
+        UsecaseIncludeEntity result =
                 svc.createInclude(diagram, base, inclusion);
         return ResponseEnvelope.json(201,
                 JsonWriter.ok(EntityJson.toMap(result)));

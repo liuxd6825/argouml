@@ -7,12 +7,12 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
+package org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline;
 
 import java.util.Map;
 
-import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
+import org.argouml.ai.application.sequencediagram.SequenceDiagramService;
+import org.argouml.ai.domain.entity.SequenceLifelineEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -20,16 +20,22 @@ import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/usecases/{uuid}}.
+ * Handler for {@code GET /d/{d}/sequencediagram/lifelines/{uuid}}.
  *
- * <p>Looks up a use case by ArgoUML UUID. Returns 200 with the
- * full {@link UsecaseUseCaseEntity}, or 404 USECASE_NOT_FOUND.</p>
+ * <p>Looks up a lifeline by its ArgoUML UUID (xmi.id). This is
+ * the safe way to address an element when multiple lifelines
+ * may share a name in the same namespace. Returns 200 with the
+ * full {@link SequenceLifelineEntity}, or 404 LIFELINE_NOT_FOUND.</p>
+ *
+ * <p>The {@code {uuid}} path segment occupies the bare slot in
+ * the lifeline sub-route; name lookups use {@code /by-name/{name}}.
+ * A request whose path segment is empty yields 400 INVALID_NAME.</p>
  */
-public final class GetUseCaseByUuidHandler implements IRequestHandler {
+public final class GetLifelineByUuidHandler implements IRequestHandler {
 
-    private final UseCaseDiagramService svc;
+    private final SequenceDiagramService svc;
 
-    public GetUseCaseByUuidHandler(UseCaseDiagramService svc) {
+    public GetLifelineByUuidHandler(SequenceDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -44,9 +50,9 @@ public final class GetUseCaseByUuidHandler implements IRequestHandler {
         String uuid = pathParams == null ? null : pathParams.get("uuid");
         if (uuid == null || uuid.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "UseCase uuid required in path"));
+                    "Lifeline uuid required in path"));
         }
-        UsecaseUseCaseEntity v = svc.findUseCaseByUuid(diagram, uuid);
+        SequenceLifelineEntity v = svc.findLifelineByUuid(diagram, uuid);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

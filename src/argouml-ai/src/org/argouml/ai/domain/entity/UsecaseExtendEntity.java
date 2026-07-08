@@ -15,7 +15,7 @@ package org.argouml.ai.domain.entity;
  * <p>{@link #name()} returns {@code null}; clients use
  * {@link #id()} ({@code "base|extension"}) or {@link #uuid()}.</p>
  */
-public final class ExtendEntity implements Identified {
+public final class UsecaseExtendEntity implements Identified {
 
     private final String uuid;
     private final String id;
@@ -26,7 +26,7 @@ public final class ExtendEntity implements Identified {
     private final String extensionPoint;
     private final String diagramUuid;
 
-    public ExtendEntity(String uuid, String id,
+    public UsecaseExtendEntity(String uuid, String id,
                         String baseUuid, String baseName,
                         String extensionUuid, String extensionName,
                         String extensionPoint, String diagramUuid) {

@@ -14,13 +14,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.argouml.ai.domain.entity.ActorEntity;
-import org.argouml.ai.domain.entity.AssociationEntity;
-import org.argouml.ai.domain.entity.ExtendEntity;
 import org.argouml.ai.domain.entity.Identified;
-import org.argouml.ai.domain.entity.IncludeEntity;
-import org.argouml.ai.domain.entity.UseCaseDiagramEntity;
-import org.argouml.ai.domain.entity.UseCaseEntity;
+import org.argouml.ai.domain.entity.SequenceClassifierRoleEntity;
+import org.argouml.ai.domain.entity.SequenceDiagramEntity;
+import org.argouml.ai.domain.entity.SequenceLifelineEntity;
+import org.argouml.ai.domain.entity.SequenceMessageEntity;
+import org.argouml.ai.domain.entity.UsecaseActorEntity;
+import org.argouml.ai.domain.entity.UsecaseAssociationEntity;
+import org.argouml.ai.domain.entity.UsecaseDiagramEntity;
+import org.argouml.ai.domain.entity.UsecaseExtendEntity;
+import org.argouml.ai.domain.entity.UsecaseIncludeEntity;
+import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 
 /**
  * Serialises {@link Identified} entities (and lists thereof) to
@@ -52,23 +56,35 @@ public final class EntityJson {
         if (e == null) {
             return null;
         }
-        if (e instanceof ActorEntity) {
-            return toMap((ActorEntity) e);
+        if (e instanceof SequenceClassifierRoleEntity) {
+            return toMap((SequenceClassifierRoleEntity) e);
         }
-        if (e instanceof UseCaseEntity) {
-            return toMap((UseCaseEntity) e);
+        if (e instanceof SequenceLifelineEntity) {
+            return toMap((SequenceLifelineEntity) e);
         }
-        if (e instanceof AssociationEntity) {
-            return toMap((AssociationEntity) e);
+        if (e instanceof SequenceMessageEntity) {
+            return toMap((SequenceMessageEntity) e);
         }
-        if (e instanceof IncludeEntity) {
-            return toMap((IncludeEntity) e);
+        if (e instanceof SequenceDiagramEntity) {
+            return toMap((SequenceDiagramEntity) e);
         }
-        if (e instanceof ExtendEntity) {
-            return toMap((ExtendEntity) e);
+        if (e instanceof UsecaseActorEntity) {
+            return toMap((UsecaseActorEntity) e);
         }
-        if (e instanceof UseCaseDiagramEntity) {
-            return toMap((UseCaseDiagramEntity) e);
+        if (e instanceof UsecaseUseCaseEntity) {
+            return toMap((UsecaseUseCaseEntity) e);
+        }
+        if (e instanceof UsecaseAssociationEntity) {
+            return toMap((UsecaseAssociationEntity) e);
+        }
+        if (e instanceof UsecaseIncludeEntity) {
+            return toMap((UsecaseIncludeEntity) e);
+        }
+        if (e instanceof UsecaseExtendEntity) {
+            return toMap((UsecaseExtendEntity) e);
+        }
+        if (e instanceof UsecaseDiagramEntity) {
+            return toMap((UsecaseDiagramEntity) e);
         }
         // Fallback for any future entity type. Best-effort:
         // emit only the Identified contract.
@@ -93,7 +109,60 @@ public final class EntityJson {
         return out;
     }
 
-    private static Map<String, Object> toMap(ActorEntity e) {
+    private static Map<String, Object> toMap(SequenceClassifierRoleEntity e) {
+        Map<String, Object> m = new LinkedHashMap<String, Object>();
+        m.put("uuid", e.uuid());
+        m.put("name", e.name());
+        m.put("kind", e.kind());
+        m.put("baseUuid", e.baseUuid());
+        m.put("lifelineUuid", e.lifelineUuid());
+        m.put("diagramUuid", e.diagramUuid());
+        m.put("x", e.x());
+        m.put("y", e.y());
+        return m;
+    }
+
+    private static Map<String, Object> toMap(SequenceLifelineEntity e) {
+        Map<String, Object> m = new LinkedHashMap<String, Object>();
+        m.put("uuid", e.uuid());
+        m.put("name", e.name());
+        m.put("kind", e.kind());
+        m.put("classifierRoleUuid", e.classifierRoleUuid());
+        m.put("active", e.active());
+        m.put("diagramUuid", e.diagramUuid());
+        m.put("x", e.x());
+        m.put("y", e.y());
+        return m;
+    }
+
+    private static Map<String, Object> toMap(SequenceMessageEntity e) {
+        Map<String, Object> m = new LinkedHashMap<String, Object>();
+        m.put("uuid", e.uuid());
+        m.put("name", e.name());
+        m.put("kind", e.kind());
+        m.put("actionSignature", e.actionSignature());
+        m.put("messageType", e.messageType());
+        m.put("sequenceNumber", e.sequenceNumber());
+        m.put("activation", e.activation());
+        m.put("fromUuid", e.fromUuid());
+        m.put("toUuid", e.toUuid());
+        m.put("diagramUuid", e.diagramUuid());
+        m.put("x", e.x());
+        m.put("y", e.y());
+        m.put("methodUuid", e.methodUuid());
+        return m;
+    }
+
+    private static Map<String, Object> toMap(SequenceDiagramEntity e) {
+        Map<String, Object> m = new LinkedHashMap<String, Object>();
+        m.put("uuid", e.uuid());
+        m.put("name", e.name());
+        m.put("kind", e.kind());
+        m.put("namespace", e.namespace());
+        return m;
+    }
+
+    private static Map<String, Object> toMap(UsecaseActorEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());
@@ -104,7 +173,7 @@ public final class EntityJson {
         return m;
     }
 
-    private static Map<String, Object> toMap(UseCaseEntity e) {
+    private static Map<String, Object> toMap(UsecaseUseCaseEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());
@@ -116,7 +185,7 @@ public final class EntityJson {
         return m;
     }
 
-    private static Map<String, Object> toMap(AssociationEntity e) {
+    private static Map<String, Object> toMap(UsecaseAssociationEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());
@@ -130,7 +199,7 @@ public final class EntityJson {
         return m;
     }
 
-    private static Map<String, Object> toMap(IncludeEntity e) {
+    private static Map<String, Object> toMap(UsecaseIncludeEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());
@@ -144,7 +213,7 @@ public final class EntityJson {
         return m;
     }
 
-    private static Map<String, Object> toMap(ExtendEntity e) {
+    private static Map<String, Object> toMap(UsecaseExtendEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());
@@ -159,7 +228,7 @@ public final class EntityJson {
         return m;
     }
 
-    private static Map<String, Object> toMap(UseCaseDiagramEntity e) {
+    private static Map<String, Object> toMap(UsecaseDiagramEntity e) {
         Map<String, Object> m = new LinkedHashMap<String, Object>();
         m.put("uuid", e.uuid());
         m.put("name", e.name());

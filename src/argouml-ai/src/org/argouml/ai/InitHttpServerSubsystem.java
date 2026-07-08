@@ -57,6 +57,25 @@ import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByN
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByUuidHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCasesHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.MoveUseCaseHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.GetDiagramStateHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.ListLayerFigsHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.CreateLifelineHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.DeleteLifelineByNameHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.DeleteLifelineByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.GetLifelineByNameHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.GetLifelineByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.ListLifelinesHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.message.CreateMessageHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.message.DeleteMessageByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.message.GetMessageByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.message.ListMessagesHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.CreateRoleHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.DeleteRoleByNameHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.DeleteRoleByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.GetRoleByNameHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.GetRoleByUuidHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.ListRolesHandler;
+import org.argouml.ai.inbound.rest.sequencediagram.handlers.role.MoveRoleHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.layout.CleanupDatatypesHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.layout.GetLayoutHandler;
 import org.argouml.ai.inbound.rest.classdiagram.handlers.layout.PostLayoutHandler;
@@ -173,6 +192,8 @@ public class InitHttpServerSubsystem implements InitSubsystem {
         ClassDiagramService svc = DiagramServices.classSvc();
         org.argouml.ai.application.usecasediagram.UseCaseDiagramService ucSvc =
                 DiagramServices.useCaseSvc();
+        org.argouml.ai.application.sequencediagram.SequenceDiagramService seqSvc =
+                DiagramServices.sequenceSvc();
 
         // common (project-scoped) routes
         router.add(Method.GET, "/health", new HealthHandler());
@@ -306,6 +327,57 @@ public class InitHttpServerSubsystem implements InitSubsystem {
                 new CreateExtendHandler(ucSvc));
         router.add(Method.DELETE, "/d/{d}/usecasediagram/extends/{id}",
                 new DeleteExtendHandler(ucSvc));
+
+        // Sequence diagram API (entity-based; uuid is the stable id)
+        // Diagram is created via POST /project/diagrams with kind:"sequencediagram" (existing endpoint)
+        // ClassifierRole CRUD
+        router.add(Method.POST, "/d/{d}/sequencediagram/roles",
+                new CreateRoleHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/roles",
+                new ListRolesHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/roles/by-name/{n}",
+                new GetRoleByNameHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/roles/{uuid}",
+                new GetRoleByUuidHandler(seqSvc));
+        router.add(Method.PUT, "/d/{d}/sequencediagram/roles/by-name/{n}",
+                new MoveRoleHandler(seqSvc));
+        router.add(Method.DELETE, "/d/{d}/sequencediagram/roles/by-name/{n}",
+                new DeleteRoleByNameHandler(seqSvc));
+        router.add(Method.DELETE, "/d/{d}/sequencediagram/roles/{uuid}",
+                new DeleteRoleByUuidHandler(seqSvc));
+        // Lifeline CRUD
+        router.add(Method.POST, "/d/{d}/sequencediagram/lifelines",
+                new CreateLifelineHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/lifelines",
+                new ListLifelinesHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/lifelines/by-name/{n}",
+                new GetLifelineByNameHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/lifelines/{uuid}",
+                new GetLifelineByUuidHandler(seqSvc));
+        router.add(Method.DELETE, "/d/{d}/sequencediagram/lifelines/by-name/{n}",
+                new DeleteLifelineByNameHandler(seqSvc));
+        router.add(Method.DELETE, "/d/{d}/sequencediagram/lifelines/{uuid}",
+                new DeleteLifelineByUuidHandler(seqSvc));
+        // Message CRUD
+        router.add(Method.POST, "/d/{d}/sequencediagram/messages",
+                new CreateMessageHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/messages",
+                new ListMessagesHandler(seqSvc));
+        router.add(Method.GET, "/d/{d}/sequencediagram/messages/{uuid}",
+                new GetMessageByUuidHandler(seqSvc));
+        router.add(Method.DELETE, "/d/{d}/sequencediagram/messages/{uuid}",
+                new DeleteMessageByUuidHandler(seqSvc));
+
+        // Diagnostic — fig-count snapshot. Lets API clients verify
+        // that a mutation actually created a Fig in the layer (visible
+        // to the user), not just bookkeeping in the graph model.
+        router.add(Method.GET, "/d/{d}/sequencediagram/figs",
+                new GetDiagramStateHandler(seqSvc));
+
+        // Diagnostic — list every fig in the layer with its class name
+        // and owner uuid. Used during the diagram-drop-bug investigation.
+        router.add(Method.GET, "/d/{d}/sequencediagram/figs/dump",
+                new ListLayerFigsHandler(seqSvc));
 
         return router;
     }

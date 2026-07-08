@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UseCaseEntity;
+import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.inbound.rest.common.handlers.AbstractListHandler;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -22,24 +22,24 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code GET /d/{d}/usecasediagram/usecases}.
  *
- * <p>Returns 200 with a JSON array of {@link UseCaseEntity}
+ * <p>Returns 200 with a JSON array of {@link UsecaseUseCaseEntity}
  * objects (each containing {@code uuid, name, kind, description,
  * diagramUuid, x, y}).</p>
  */
 public final class ListUseCasesHandler
-        extends AbstractListHandler<UseCaseDiagramService, UseCaseEntity> {
+        extends AbstractListHandler<UseCaseDiagramService, UsecaseUseCaseEntity> {
 
     public ListUseCasesHandler(UseCaseDiagramService svc) {
         super(svc);
     }
 
     @Override
-    protected List<UseCaseEntity> doList(String diagram) {
+    protected List<UsecaseUseCaseEntity> doList(String diagram) {
         return service.listUseCases(diagram);
     }
 
     @Override
-    protected Map<String, Object> toView(UseCaseEntity u) {
+    protected Map<String, Object> toView(UsecaseUseCaseEntity u) {
         return EntityJson.toMap(u);
     }
 }

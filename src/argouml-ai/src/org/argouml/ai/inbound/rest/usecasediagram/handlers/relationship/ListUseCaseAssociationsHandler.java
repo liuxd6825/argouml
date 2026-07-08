@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.AssociationEntity;
+import org.argouml.ai.domain.entity.UsecaseAssociationEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -23,7 +23,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code GET /d/{d}/usecasediagram/associations}.
  *
- * <p>Returns 200 with a JSON array of {@link AssociationEntity}
+ * <p>Returns 200 with a JSON array of {@link UsecaseAssociationEntity}
  * entries. Each entry carries {@code uuid, name (null),
  * kind="association", id, actorUuid, actorName, usecaseUuid,
  * usecaseName, diagramUuid}.</p>
@@ -44,10 +44,10 @@ public final class ListUseCaseAssociationsHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        List<AssociationEntity> rows = svc.listAssociations(diagram);
+        List<UsecaseAssociationEntity> rows = svc.listAssociations(diagram);
         List<Map<String, Object>> out = new ArrayList<Map<String, Object>>(
                 rows.size());
-        for (AssociationEntity r : rows) {
+        for (UsecaseAssociationEntity r : rows) {
             out.add(EntityJson.toMap(r));
         }
         return ResponseEnvelope.json(200, JsonWriter.ok(out));

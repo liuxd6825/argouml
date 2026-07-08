@@ -17,7 +17,7 @@ package org.argouml.ai.domain.entity;
  * composite {@link #id()} ({@code "actor|usecase"}) or the
  * ArgoUML {@link #uuid()}.</p>
  */
-public final class AssociationEntity implements Identified {
+public final class UsecaseAssociationEntity implements Identified {
 
     private final String uuid;
     private final String id;
@@ -27,7 +27,7 @@ public final class AssociationEntity implements Identified {
     private final String usecaseName;
     private final String diagramUuid;
 
-    public AssociationEntity(String uuid, String id,
+    public UsecaseAssociationEntity(String uuid, String id,
                              String actorUuid, String actorName,
                              String usecaseUuid, String usecaseName,
                              String diagramUuid) {

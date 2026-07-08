@@ -183,7 +183,7 @@ test time.
 | `src/argouml-core-diagrams-state2/` | Thin wrapper around legacy state diagram, gated on UML 2. |
 | `src/argouml-core-diagrams-deployment2/` | Same pattern as state2. |
 | `src/argouml-build/` | POM-only assembly module. `mvn package` here = fat jar. |
-| `src/argouml-ai/` | AI 子系统 HTTP REST API（基于 NanoHTTPD），含 30+ 端点服务于类图。**不在根 reactor 中**；需独立构建。详见下方"argouml-ai REST API"小节。 |
+| `src/argouml-ai/` | AI 子系统 HTTP REST API（基于 NanoHTTPD），含 50+ 端点服务于类图/用例图/时序图。**不在根 reactor 中**；需独立构建。详见下方"argouml-ai REST API"小节。 |
 
 ## Architecture landmarks
 
@@ -349,6 +349,51 @@ src/main/java/org/argouml/ai/
 5. `InitHttpServerSubsystem` 注册路由（每端点 1 行）
 
 **零重复代码**——预计每种新图类型 < 300 行实现 + < 200 行测试。
+
+### 实体命名约定（Phase 2 锁定）
+
+所有 per-kind 实体类名格式：`<Kind><Element>Entity`，
+其中 `Kind = ModelKind.shortKind()`（Usecase / Sequence / 后续 Class / State / Activity）。
+
+例：
+- `UsecaseActorEntity`（旧名 `ActorEntity`，Phase 2 rename）
+- `UsecaseUseCaseEntity`（旧名 `UseCaseEntity`，Phase 2 rename）
+- `SequenceClassifierRoleEntity`（Phase 2 新增）
+- `SequenceLifelineEntity`（Phase 2 新增）
+- `SequenceMessageEntity`（Phase 2 新增）
+- `SequenceDiagramEntity`（Phase 2 新增）
+
+3 个 interface 不变：`Identified` / `ElementEntity` / `DiagramEntity`。
+`kind()` 方法返回的 wire discriminator 不变（向后兼容）。
+
+### 方法提取（Phase 2 锁定，syncCall only）
+
+`POST /d/{d}/sequencediagram/messages` 在以下条件下会自动在
+to-lifeline 关联的 class 上新增方法：
+
+- `messageType == "syncCall"`
+- `actionSignature` 非空（形如 `"cancelOrder(Long, String)"`）
+- to-lifeline 的角色已绑定 class（无则按 role 名自动创建）
+
+返回的 message entity 含 `methodUuid` 字段（已存在则返原 uuid，幂等）。
+
+只支持 syncCall；asyncCall / reply / create / delete 跳过此路径。
+
+调用链：`SequenceDiagramService.createMessage` →
+`MethodOperations.addMethod` →
+`Model.getCoreFactory().buildOperation2 + buildParameter`。
+
+> **MDR 限制**：`findOrCreateClassForRole` 不绑定 ClassifierRole 到 MClass（`CollaborationsHelperMDRImpl.setBase` 对 ClassifierRole 抛 `IllegalArgumentException`，仅支持 `AssociationRole`/`AssociationEndRole`）。返回的 `baseUuid` 字段对 `createRole` 永远为 `""`，但 MClass 已通过名字查找可被后续 message 找到。EUML backend 切换后会改为真正的绑定。
+
+### MDR / UML 1.4 后端的关键 quirk（Phase 2 发现）
+
+在 `argouml-core-model-mdr` 默认 backend 下，UML 1.4 元类的实现与 UML 2.x 差异：
+
+- **`Lifeline` 不是独立 metaclass**。`Model.getCollaborationsFactory().buildLifeline(collaboration)` 实际返回一个 `ClassifierRole`（带 multiplicity 1,1）；`buildClassifierRole(collaboration)` 也是 `ClassifierRole`（默认 multiplicity）。两者底层都是同一个 `MClassifierRole`。
+- 业务层要区分 `/roles` 与 `/lifelines`，只能在 service 层用 uuid Set 显式追踪哪些元素是 `/roles` 创建、哪些是 `/lifelines` 创建（`SequenceDiagramService.ROLE_UUIDS_BY_DIAGRAM` / `LIFELINE_UUIDS_BY_DIAGRAM`）。`listRoles` 与 `listLifelines` 各过滤各自的 Set；`getRoleByName/ByUuid` / `getLifelineByName/ByUuid` 同理。
+- 切到 EUML 后端时，这两套 Set 的过滤逻辑可以废弃，metaclass 自带区分（UML 2.x 有独立 `MLifeline`）。
+- **UMLSequenceDiagram 构造器签名是 `(Object collaboration)`，不是 `(String name, Object ns)`**。`name` 要后调 `setName(...)`，包 try/catch `PropertyVetoException`。
+- **`Model.getFacade().getUUID(ArgoDiagram)` 抛 IllegalArgumentException**。`diagramUuid` 用 namespace 的 UUID 代理。
 
 ## Build & test commands
 

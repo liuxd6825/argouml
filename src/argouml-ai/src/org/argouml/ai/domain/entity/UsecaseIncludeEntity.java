@@ -15,7 +15,7 @@ package org.argouml.ai.domain.entity;
  * <p>{@link #name()} returns {@code null}; clients use
  * {@link #id()} ({@code "base|inclusion"}) or {@link #uuid()}.</p>
  */
-public final class IncludeEntity implements Identified {
+public final class UsecaseIncludeEntity implements Identified {
 
     private final String uuid;
     private final String id;
@@ -25,7 +25,7 @@ public final class IncludeEntity implements Identified {
     private final String inclusionName;
     private final String diagramUuid;
 
-    public IncludeEntity(String uuid, String id,
+    public UsecaseIncludeEntity(String uuid, String id,
                          String baseUuid, String baseName,
                          String inclusionUuid, String inclusionName,
                          String diagramUuid) {

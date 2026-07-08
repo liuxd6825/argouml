@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.AssociationEntity;
+import org.argouml.ai.domain.entity.UsecaseAssociationEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -23,7 +23,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
 /**
  * Handler for {@code POST /d/{d}/usecasediagram/associations}.
  * Body: {@code {"actor": "...", "usecase": "..."}}.
- * Returns 201 with the new {@link AssociationEntity} (entity
+ * Returns 201 with the new {@link UsecaseAssociationEntity} (entity
  * contains {@code uuid, name (null), kind="association", id,
  * actorUuid, actorName, usecaseUuid, usecaseName, diagramUuid}).
  */
@@ -56,7 +56,7 @@ public final class CreateAssociationHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'actor' and 'usecase' fields are required"));
         }
-        AssociationEntity result =
+        UsecaseAssociationEntity result =
                 svc.createAssociation(diagram, actor, usecase);
         return ResponseEnvelope.json(201,
                 JsonWriter.ok(EntityJson.toMap(result)));

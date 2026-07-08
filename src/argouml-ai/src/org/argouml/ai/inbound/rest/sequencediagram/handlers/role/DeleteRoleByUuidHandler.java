@@ -7,29 +7,30 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
+package org.argouml.ai.inbound.rest.sequencediagram.handlers.role;
 
 import java.util.Map;
 
-import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
+import org.argouml.ai.application.sequencediagram.SequenceDiagramService;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
-import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonError;
-import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/usecases/{uuid}}.
+ * Handler for {@code DELETE /d/{d}/sequencediagram/roles/{uuid}}.
  *
- * <p>Looks up a use case by ArgoUML UUID. Returns 200 with the
- * full {@link UsecaseUseCaseEntity}, or 404 USECASE_NOT_FOUND.</p>
+ * <p>Deletes a classifier-role by its ArgoUML UUID (xmi.id).
+ * Returns 204 on success, 404 ROLE_NOT_FOUND when the uuid
+ * doesn't match any role on the named diagram.</p>
+ *
+ * <p>This route is the bare-slot counterpart to
+ * {@code /by-name/{n}}. The path-parameter key is {@code "uuid"}.</p>
  */
-public final class GetUseCaseByUuidHandler implements IRequestHandler {
+public final class DeleteRoleByUuidHandler implements IRequestHandler {
 
-    private final UseCaseDiagramService svc;
+    private final SequenceDiagramService svc;
 
-    public GetUseCaseByUuidHandler(UseCaseDiagramService svc) {
+    public DeleteRoleByUuidHandler(SequenceDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -44,9 +45,14 @@ public final class GetUseCaseByUuidHandler implements IRequestHandler {
         String uuid = pathParams == null ? null : pathParams.get("uuid");
         if (uuid == null || uuid.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "UseCase uuid required in path"));
+                    "ClassifierRole uuid required in path"));
         }
-        UsecaseUseCaseEntity v = svc.findUseCaseByUuid(diagram, uuid);
-        return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
+        svc.deleteRoleByUuid(diagram, uuid);
+        return ResponseEnvelope.json(204, "");
+    }
+
+    /** Identifier for tests; not part of the wire contract. */
+    public static String pathParamKey() {
+        return "uuid";
     }
 }

@@ -7,38 +7,39 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
+package org.argouml.ai.inbound.rest.sequencediagram.handlers.role;
 
 import java.util.List;
 import java.util.Map;
 
-import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UsecaseActorEntity;
+import org.argouml.ai.application.sequencediagram.SequenceDiagramService;
+import org.argouml.ai.domain.entity.SequenceClassifierRoleEntity;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.inbound.rest.common.handlers.AbstractListHandler;
 import org.argouml.ai.infrastructure.json.EntityJson;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/actors}.
+ * Handler for {@code GET /d/{d}/sequencediagram/roles}.
  *
- * <p>Returns 200 with a JSON array of {@link UsecaseActorEntity} objects
- * (each containing {@code uuid, name, kind, diagramUuid, x, y}).</p>
+ * <p>Returns 200 with a JSON array of {@link
+ * SequenceClassifierRoleEntity} objects (each containing
+ * {@code uuid, name, baseUuid, lifelineUuid, diagramUuid, x, y}).</p>
  */
-public final class ListActorsHandler
-        extends AbstractListHandler<UseCaseDiagramService, UsecaseActorEntity> {
+public final class ListRolesHandler
+        extends AbstractListHandler<SequenceDiagramService, SequenceClassifierRoleEntity> {
 
-    public ListActorsHandler(UseCaseDiagramService svc) {
+    public ListRolesHandler(SequenceDiagramService svc) {
         super(svc);
     }
 
     @Override
-    protected List<UsecaseActorEntity> doList(String diagram) {
-        return service.listActors(diagram);
+    protected List<SequenceClassifierRoleEntity> doList(String diagram) {
+        return service.listRoles(diagram);
     }
 
     @Override
-    protected Map<String, Object> toView(UsecaseActorEntity a) {
+    protected Map<String, Object> toView(SequenceClassifierRoleEntity a) {
         return EntityJson.toMap(a);
     }
 }

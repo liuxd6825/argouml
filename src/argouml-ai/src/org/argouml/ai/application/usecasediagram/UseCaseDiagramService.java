@@ -19,11 +19,11 @@ import org.argouml.ai.application.common.InvalidArgumentException;
 import org.argouml.ai.application.common.NotFoundException;
 import org.argouml.ai.application.common.UndoScope;
 import org.argouml.ai.domain.common.ModelKind;
-import org.argouml.ai.domain.entity.ActorEntity;
-import org.argouml.ai.domain.entity.AssociationEntity;
-import org.argouml.ai.domain.entity.ExtendEntity;
-import org.argouml.ai.domain.entity.IncludeEntity;
-import org.argouml.ai.domain.entity.UseCaseEntity;
+import org.argouml.ai.domain.entity.UsecaseActorEntity;
+import org.argouml.ai.domain.entity.UsecaseAssociationEntity;
+import org.argouml.ai.domain.entity.UsecaseExtendEntity;
+import org.argouml.ai.domain.entity.UsecaseIncludeEntity;
+import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 import org.argouml.ai.domain.usecasediagram.ActorOperations;
 import org.argouml.ai.domain.usecasediagram.ExtendOperations;
 import org.argouml.ai.domain.usecasediagram.IncludeOperations;
@@ -37,9 +37,9 @@ import org.tigris.gef.graph.MutableGraphModel;
  * Application-layer service facade for UML use-case diagrams.
  *
  * <p>All public methods return immutable {@link org.argouml.ai.domain.entity.Identified}
- * entity objects (actors → {@link ActorEntity}, use cases →
- * {@link UseCaseEntity}, edges → {@link AssociationEntity} /
- * {@link IncludeEntity} / {@link ExtendEntity}). Every entity
+ * entity objects (actors → {@link UsecaseActorEntity}, use cases →
+ * {@link UsecaseUseCaseEntity}, edges → {@link UsecaseAssociationEntity} /
+ * {@link UsecaseIncludeEntity} / {@link UsecaseExtendEntity}). Every entity
  * carries an ArgoUML UUID (xmi.id) so callers can disambiguate
  * elements that share a name within a namespace.</p>
  *
@@ -124,7 +124,7 @@ public final class UseCaseDiagramService implements DiagramService {
 
     // ---- Actor ----
 
-    public ActorEntity createActor(String diagramName, String name,
+    public UsecaseActorEntity createActor(String diagramName, String name,
                                    int x, int y) {
         AbstractDiagramServiceHelper.requireNonEmptyName(name);
         ArgoDiagram d = requireDiagram(diagramName);
@@ -137,28 +137,28 @@ public final class UseCaseDiagramService implements DiagramService {
         try (UndoScope s = UndoScope.open("CreateActor:" + name)) {
             Object actor = ACTOR_OPS.build(d, name);
             ACTOR_OPS.setPosition(d, actor, x, y);
-            return new ActorEntity(uuidOf(actor), name,
+            return new UsecaseActorEntity(uuidOf(actor), name,
                     diagramUuidOf(d), x, y);
         }
     }
 
-    public List<ActorEntity> listActors(String diagramName) {
+    public List<UsecaseActorEntity> listActors(String diagramName) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
-        List<ActorEntity> out = new ArrayList<ActorEntity>();
+        List<UsecaseActorEntity> out = new ArrayList<UsecaseActorEntity>();
         Facade facade = Model.getFacade();
         String dUuid = diagramUuidOf(d);
         for (Object node : d.getGraphModel().getNodes()) {
             if (facade.isAActor(node)) {
                 String name = facade.getName(node);
-                out.add(new ActorEntity(uuidOf(node), name, dUuid,
+                out.add(new UsecaseActorEntity(uuidOf(node), name, dUuid,
                         xOf(d, node), yOf(d, node)));
             }
         }
         return out;
     }
 
-    public ActorEntity getActorByName(String diagramName, String name) {
+    public UsecaseActorEntity getActorByName(String diagramName, String name) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
         Object actor = ACTOR_OPS.findByName(d, name);
@@ -167,11 +167,11 @@ public final class UseCaseDiagramService implements DiagramService {
                     "Actor '" + name + "' not found on diagram '"
                     + diagramName + "'");
         }
-        return new ActorEntity(uuidOf(actor), name, diagramUuidOf(d),
+        return new UsecaseActorEntity(uuidOf(actor), name, diagramUuidOf(d),
                 xOf(d, actor), yOf(d, actor));
     }
 
-    public ActorEntity findActorByUuid(String diagramName, String uuid) {
+    public UsecaseActorEntity findActorByUuid(String diagramName, String uuid) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
         Object actor = ACTOR_OPS.findByUuid(d, uuid);
@@ -181,7 +181,7 @@ public final class UseCaseDiagramService implements DiagramService {
                     + diagramName + "'");
         }
         Facade facade = Model.getFacade();
-        return new ActorEntity(uuidOf(actor), facade.getName(actor),
+        return new UsecaseActorEntity(uuidOf(actor), facade.getName(actor),
                 diagramUuidOf(d),
                 xOf(d, actor), yOf(d, actor));
     }
@@ -214,7 +214,7 @@ public final class UseCaseDiagramService implements DiagramService {
         }
     }
 
-    public ActorEntity setActorPosition(String diagramName, String name,
+    public UsecaseActorEntity setActorPosition(String diagramName, String name,
                                         int x, int y) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
@@ -226,12 +226,12 @@ public final class UseCaseDiagramService implements DiagramService {
         try (UndoScope s = UndoScope.open("MoveActor:" + name)) {
             ACTOR_OPS.setPosition(d, actor, x, y);
         }
-        return new ActorEntity(uuidOf(actor), name, diagramUuidOf(d), x, y);
+        return new UsecaseActorEntity(uuidOf(actor), name, diagramUuidOf(d), x, y);
     }
 
     // ---- UseCase ----
 
-    public UseCaseEntity createUseCase(String diagramName, String name,
+    public UsecaseUseCaseEntity createUseCase(String diagramName, String name,
                                        String description, int x, int y) {
         AbstractDiagramServiceHelper.requireNonEmptyName(name);
         ArgoDiagram d = requireDiagram(diagramName);
@@ -244,29 +244,29 @@ public final class UseCaseDiagramService implements DiagramService {
         try (UndoScope s = UndoScope.open("CreateUseCase:" + name)) {
             Object useCase = USE_CASE_OPS.build(d, name, description);
             USE_CASE_OPS.setPosition(d, useCase, x, y);
-            return new UseCaseEntity(uuidOf(useCase), name,
+            return new UsecaseUseCaseEntity(uuidOf(useCase), name,
                     description, diagramUuidOf(d), x, y);
         }
     }
 
-    public List<UseCaseEntity> listUseCases(String diagramName) {
+    public List<UsecaseUseCaseEntity> listUseCases(String diagramName) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
-        List<UseCaseEntity> out = new ArrayList<UseCaseEntity>();
+        List<UsecaseUseCaseEntity> out = new ArrayList<UsecaseUseCaseEntity>();
         Facade facade = Model.getFacade();
         String dUuid = diagramUuidOf(d);
         for (Object node : d.getGraphModel().getNodes()) {
             if (facade.isAUseCase(node)) {
                 String name = facade.getName(node);
                 String desc = readDescription(node);
-                out.add(new UseCaseEntity(uuidOf(node), name, desc,
+                out.add(new UsecaseUseCaseEntity(uuidOf(node), name, desc,
                         dUuid, xOf(d, node), yOf(d, node)));
             }
         }
         return out;
     }
 
-    public UseCaseEntity getUseCaseByName(String diagramName, String name) {
+    public UsecaseUseCaseEntity getUseCaseByName(String diagramName, String name) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
         Object useCase = USE_CASE_OPS.findByName(d, name);
@@ -275,12 +275,12 @@ public final class UseCaseDiagramService implements DiagramService {
                     "UseCase '" + name + "' not found on diagram '"
                     + diagramName + "'");
         }
-        return new UseCaseEntity(uuidOf(useCase), name,
+        return new UsecaseUseCaseEntity(uuidOf(useCase), name,
                 readDescription(useCase), diagramUuidOf(d),
                 xOf(d, useCase), yOf(d, useCase));
     }
 
-    public UseCaseEntity findUseCaseByUuid(String diagramName, String uuid) {
+    public UsecaseUseCaseEntity findUseCaseByUuid(String diagramName, String uuid) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
         Object useCase = USE_CASE_OPS.findByUuid(d, uuid);
@@ -290,7 +290,7 @@ public final class UseCaseDiagramService implements DiagramService {
                     + diagramName + "'");
         }
         Facade facade = Model.getFacade();
-        return new UseCaseEntity(uuidOf(useCase), facade.getName(useCase),
+        return new UsecaseUseCaseEntity(uuidOf(useCase), facade.getName(useCase),
                 readDescription(useCase), diagramUuidOf(d),
                 xOf(d, useCase), yOf(d, useCase));
     }
@@ -323,7 +323,7 @@ public final class UseCaseDiagramService implements DiagramService {
         }
     }
 
-    public UseCaseEntity setUseCasePosition(String diagramName, String name,
+    public UsecaseUseCaseEntity setUseCasePosition(String diagramName, String name,
                                             int x, int y) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
@@ -335,13 +335,13 @@ public final class UseCaseDiagramService implements DiagramService {
         try (UndoScope s = UndoScope.open("MoveUseCase:" + name)) {
             USE_CASE_OPS.setPosition(d, useCase, x, y);
         }
-        return new UseCaseEntity(uuidOf(useCase), name,
+        return new UsecaseUseCaseEntity(uuidOf(useCase), name,
                 readDescription(useCase), diagramUuidOf(d), x, y);
     }
 
     // ---- Relationships ----
 
-    public AssociationEntity createAssociation(String diagramName,
+    public UsecaseAssociationEntity createAssociation(String diagramName,
                                                String actorName,
                                                String useCaseName) {
         ArgoDiagram d = requireDiagram(diagramName);
@@ -371,7 +371,7 @@ public final class UseCaseDiagramService implements DiagramService {
             if (gm != null && !gm.getEdges().contains(assoc)) {
                 gm.addEdge(assoc);
             }
-            return new AssociationEntity(
+            return new UsecaseAssociationEntity(
                     uuidOf(assoc), actorName + "|" + useCaseName,
                     uuidOf(actor), actorName,
                     uuidOf(useCase), useCaseName,
@@ -379,10 +379,10 @@ public final class UseCaseDiagramService implements DiagramService {
         }
     }
 
-    public List<AssociationEntity> listAssociations(String diagramName) {
+    public List<UsecaseAssociationEntity> listAssociations(String diagramName) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
-        List<AssociationEntity> out = new ArrayList<AssociationEntity>();
+        List<UsecaseAssociationEntity> out = new ArrayList<UsecaseAssociationEntity>();
         Facade facade = Model.getFacade();
         String dUuid = diagramUuidOf(d);
         for (Object assoc : findAllAssociationsIn(d)) {
@@ -395,7 +395,7 @@ public final class UseCaseDiagramService implements DiagramService {
             if (actorName == null || ucName == null) {
                 continue;
             }
-            out.add(new AssociationEntity(
+            out.add(new UsecaseAssociationEntity(
                     uuidOf(assoc), actorName + "|" + ucName,
                     uuidOf(pair[0]), actorName,
                     uuidOf(pair[1]), ucName,
@@ -501,7 +501,7 @@ public final class UseCaseDiagramService implements DiagramService {
         return null;
     }
 
-    public IncludeEntity createInclude(String diagramName,
+    public UsecaseIncludeEntity createInclude(String diagramName,
                                        String baseName,
                                        String inclusionName) {
         ArgoDiagram d = requireDiagram(diagramName);
@@ -528,7 +528,7 @@ public final class UseCaseDiagramService implements DiagramService {
             if (gm != null && !gm.getEdges().contains(inc)) {
                 gm.addEdge(inc);
             }
-            return new IncludeEntity(
+            return new UsecaseIncludeEntity(
                     uuidOf(inc), baseName + "|" + inclusionName,
                     uuidOf(base), baseName,
                     uuidOf(inclusion), inclusionName,
@@ -603,7 +603,7 @@ public final class UseCaseDiagramService implements DiagramService {
         return cn.contains("Include");
     }
 
-    public ExtendEntity createExtend(String diagramName,
+    public UsecaseExtendEntity createExtend(String diagramName,
                                     String baseName,
                                     String extensionName,
                                     String extensionPoint) {
@@ -631,7 +631,7 @@ public final class UseCaseDiagramService implements DiagramService {
             if (gm != null && !gm.getEdges().contains(ext)) {
                 gm.addEdge(ext);
             }
-            return new ExtendEntity(
+            return new UsecaseExtendEntity(
                     uuidOf(ext), baseName + "|" + extensionName,
                     uuidOf(base), baseName,
                     uuidOf(extension), extensionName,
@@ -684,7 +684,7 @@ public final class UseCaseDiagramService implements DiagramService {
                 // some diagrams live under raw MModelElements; ignore
             }
         }
-        return new org.argouml.ai.domain.entity.UseCaseDiagramEntity(
+        return new org.argouml.ai.domain.entity.UsecaseDiagramEntity(
                 diagramUuidOf(d), d.getName(),
                 nsUuid == null ? "" : nsUuid);
     }

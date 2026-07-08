@@ -7,12 +7,12 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-package org.argouml.ai.inbound.rest.usecasediagram.handlers.actor;
+package org.argouml.ai.inbound.rest.sequencediagram.handlers.role;
 
 import java.util.Map;
 
-import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UsecaseActorEntity;
+import org.argouml.ai.application.sequencediagram.SequenceDiagramService;
+import org.argouml.ai.domain.entity.SequenceClassifierRoleEntity;
 import org.argouml.ai.inbound.rest.common.HandlerJsonHelper;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
@@ -22,23 +22,26 @@ import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code POST /d/{d}/usecasediagram/actors}.
+ * Handler for {@code POST /d/{d}/sequencediagram/roles}.
  *
  * <p>Body shape:
  * <pre>
- *   { "name": "User", "x": 100, "y": 60 }
+ *   { "name": "User", "baseUuid": "...", "x": 100, "y": 60 }
  * </pre>
  *
- * <p>Returns 201 with the full {@link UsecaseActorEntity} on success
- * (entity contains {@code uuid, name, kind, diagramUuid, x, y}).
- * 400 INVALID_NAME / INVALID_BODY on bad input, 409
- * DUPLICATE_ACTOR on name collision, 404 DIAGRAM_NOT_FOUND.</p>
+ * <p>Returns 201 with the full {@link SequenceClassifierRoleEntity}
+ * on success (entity contains {@code uuid, name, baseUuid,
+ * lifelineUuid, diagramUuid, x, y}). 400 INVALID_NAME /
+ * INVALID_BODY on bad input, 409 DUPLICATE_ROLE on name
+ * collision, 404 DIAGRAM_NOT_FOUND / ROLE_NOT_FOUND, 400
+ * UNSUPPORTED_DIAGRAM_TYPE when the named diagram is not a
+ * sequence diagram.</p>
  */
-public final class CreateActorHandler implements IRequestHandler {
+public final class CreateRoleHandler implements IRequestHandler {
 
-    private final UseCaseDiagramService svc;
+    private final SequenceDiagramService svc;
 
-    public CreateActorHandler(UseCaseDiagramService svc) {
+    public CreateRoleHandler(SequenceDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -66,9 +69,12 @@ public final class CreateActorHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Field 'name' is required and must be non-empty"));
         }
+        String baseUuid = json.get("baseUuid") == null
+                ? null : json.get("baseUuid").toString();
         int x = HandlerJsonHelper.intVal(json.get("x"), 0);
         int y = HandlerJsonHelper.intVal(json.get("y"), 0);
-        UsecaseActorEntity v = svc.createActor(diagram, name, x, y);
+        SequenceClassifierRoleEntity v =
+                svc.createRole(diagram, name, baseUuid, x, y);
         return ResponseEnvelope.json(201,
                 JsonWriter.ok(EntityJson.toMap(v)));
     }

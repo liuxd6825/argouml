@@ -12,7 +12,7 @@ package org.argouml.ai.inbound.rest.usecasediagram.handlers.relationship;
 import java.util.Map;
 
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.ExtendEntity;
+import org.argouml.ai.domain.entity.UsecaseExtendEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -24,7 +24,7 @@ import org.argouml.ai.infrastructure.json.JsonWriter;
  * Handler for {@code POST /d/{d}/usecasediagram/extends}.
  * Body: {@code {"base": "...", "extension": "...",
  * "extensionPoint": "..."}}.
- * Returns 201 with the new {@link ExtendEntity} (entity
+ * Returns 201 with the new {@link UsecaseExtendEntity} (entity
  * contains {@code uuid, name (null), kind="extend", id,
  * baseUuid, baseName, extensionUuid, extensionName,
  * extensionPoint, diagramUuid}).
@@ -59,7 +59,7 @@ public final class CreateExtendHandler implements IRequestHandler {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
                     "Both 'base' and 'extension' fields are required"));
         }
-        ExtendEntity result =
+        UsecaseExtendEntity result =
                 svc.createExtend(diagram, base, extension, point);
         return ResponseEnvelope.json(201,
                 JsonWriter.ok(EntityJson.toMap(result)));

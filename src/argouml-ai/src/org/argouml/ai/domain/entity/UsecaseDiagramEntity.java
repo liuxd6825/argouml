@@ -10,27 +10,26 @@
 package org.argouml.ai.domain.entity;
 
 /**
- * An actor node on a use case diagram.
+ * A use case diagram entity.
  *
- * <p>Always carries a uuid (from {@code Model.getFacade().getUUID})
- * and the diagram uuid it was placed on. x/y are read from the
- * actor's {@code Fig} at the time of the service call.</p>
+ * <p>{@link #kind()} returns {@code "usecasediagram"}; the
+ * shorter {@code "usecase"} form is used by the
+ * {@code /project/diagrams} endpoint's per-entry
+ * {@code kind} field for client-side discrimination. The two
+ * are not equivalent: this entity is returned by entity-shaped
+ * endpoints, the latter is returned by the project-listing
+ * endpoint.</p>
  */
-public final class ActorEntity implements ElementEntity {
+public final class UsecaseDiagramEntity implements DiagramEntity {
 
     private final String uuid;
     private final String name;
-    private final String diagramUuid;
-    private final int x;
-    private final int y;
+    private final String namespace;
 
-    public ActorEntity(String uuid, String name, String diagramUuid,
-                       int x, int y) {
+    public UsecaseDiagramEntity(String uuid, String name, String namespace) {
         this.uuid = uuid == null ? "" : uuid;
         this.name = name;
-        this.diagramUuid = diagramUuid == null ? "" : diagramUuid;
-        this.x = x;
-        this.y = y;
+        this.namespace = namespace == null ? "" : namespace;
     }
 
     @Override
@@ -40,14 +39,8 @@ public final class ActorEntity implements ElementEntity {
     public String name() { return name; }
 
     @Override
-    public String kind() { return "actor"; }
+    public String kind() { return "usecasediagram"; }
 
     @Override
-    public String diagramUuid() { return diagramUuid; }
-
-    @Override
-    public int x() { return x; }
-
-    @Override
-    public int y() { return y; }
+    public String namespace() { return namespace; }
 }

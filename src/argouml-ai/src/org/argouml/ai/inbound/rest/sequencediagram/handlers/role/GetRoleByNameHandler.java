@@ -7,12 +7,12 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *****************************************************************************
  */
-package org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase;
+package org.argouml.ai.inbound.rest.sequencediagram.handlers.role;
 
 import java.util.Map;
 
-import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
-import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
+import org.argouml.ai.application.sequencediagram.SequenceDiagramService;
+import org.argouml.ai.domain.entity.SequenceClassifierRoleEntity;
 import org.argouml.ai.inbound.rest.common.IRequestHandler;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
 import org.argouml.ai.infrastructure.json.EntityJson;
@@ -20,16 +20,21 @@ import org.argouml.ai.infrastructure.json.JsonError;
 import org.argouml.ai.infrastructure.json.JsonWriter;
 
 /**
- * Handler for {@code GET /d/{d}/usecasediagram/usecases/{uuid}}.
+ * Handler for {@code GET /d/{d}/sequencediagram/roles/by-name/{n}}.
  *
- * <p>Looks up a use case by ArgoUML UUID. Returns 200 with the
- * full {@link UsecaseUseCaseEntity}, or 404 USECASE_NOT_FOUND.</p>
+ * <p>Returns 200 with the full {@link
+ * SequenceClassifierRoleEntity}, or 404 ROLE_NOT_FOUND when no
+ * role with that name exists on the named diagram.</p>
+ *
+ * <p>The {@code /by-name/} prefix disambiguates from the
+ * {@code /{uuid}} route — name-routes carry the explicit prefix,
+ * uuid-routes occupy the bare slot.</p>
  */
-public final class GetUseCaseByUuidHandler implements IRequestHandler {
+public final class GetRoleByNameHandler implements IRequestHandler {
 
-    private final UseCaseDiagramService svc;
+    private final SequenceDiagramService svc;
 
-    public GetUseCaseByUuidHandler(UseCaseDiagramService svc) {
+    public GetRoleByNameHandler(SequenceDiagramService svc) {
         if (svc == null) {
             throw new IllegalArgumentException("svc");
         }
@@ -41,12 +46,12 @@ public final class GetUseCaseByUuidHandler implements IRequestHandler {
                                    Map<String, String> queryParams,
                                    String body) {
         String diagram = pathParams == null ? null : pathParams.get("d");
-        String uuid = pathParams == null ? null : pathParams.get("uuid");
-        if (uuid == null || uuid.isEmpty()) {
+        String name = pathParams == null ? null : pathParams.get("n");
+        if (name == null || name.isEmpty()) {
             return ResponseEnvelope.json(400, JsonError.of("INVALID_NAME",
-                    "UseCase uuid required in path"));
+                    "ClassifierRole name required in path"));
         }
-        UsecaseUseCaseEntity v = svc.findUseCaseByUuid(diagram, uuid);
+        SequenceClassifierRoleEntity v = svc.getRoleByName(diagram, name);
         return ResponseEnvelope.json(200, JsonWriter.ok(EntityJson.toMap(v)));
     }
 }

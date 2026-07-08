@@ -38,14 +38,13 @@ public final class DiagramOperations {
     /**
      * Create a new diagram in the current project.
      *
-     * <p>For MVP only {@link ModelKind#CLASS} is supported; passing
-     * another kind throws {@link IllegalArgumentException} until
-     * the corresponding {@code domain.<kind>} sub-package and
-     * factory are added.</p>
+     * <p>Supports {@link ModelKind#CLASS}, {@link ModelKind#USECASE},
+     * and {@link ModelKind#SEQUENCE}. ACTIVITY, STATE, and DEPLOYMENT
+     * throw {@link IllegalArgumentException} until the corresponding
+     * {@code domain.<kind>} sub-package and factory are added.</p>
      *
      * @param name the simple diagram name; must be non-null, non-empty
-     * @param kind the diagram kind; only {@link ModelKind#CLASS} is
-     *             supported today
+     * @param kind the diagram kind; one of CLASS / USECASE / SEQUENCE
      * @return the newly created diagram (already added to the project)
      * @throws IllegalArgumentException if name is null/empty, the
      *                                  current project is missing, the
@@ -83,6 +82,24 @@ public final class DiagramOperations {
             break;
         case USECASE:
             d = new org.argouml.uml.diagram.use_case.ui.UMLUseCaseDiagram(name, ns);
+            break;
+        case SEQUENCE:
+            // UMLSequenceDiagram(Object) expects an MCollaboration, not
+            // the project's MModel. The sequence module's
+            // SequenceDiagramFactory.createDiagram(owner, ...) first
+            // builds a Collaboration via Model.getCollaborationsFactory().
+            // buildCollaboration(modelRoot) then passes it to the
+            // constructor. Follow the same pattern.
+            Object modelRoot = project.getUserDefinedModelList().iterator().next();
+            Object collaboration = org.argouml.model.Model.getCollaborationsFactory()
+                    .buildCollaboration(modelRoot);
+            d = new org.argouml.sequence2.diagram.UMLSequenceDiagram(collaboration);
+            try {
+                d.setName(name);
+            } catch (java.beans.PropertyVetoException e) {
+                throw new IllegalArgumentException(
+                        "Cannot set name '" + name + "': " + e.getMessage(), e);
+            }
             break;
         default:
             // unreachable: enforced above
@@ -168,6 +185,9 @@ public final class DiagramOperations {
         }
         if (d instanceof org.argouml.uml.diagram.use_case.ui.UMLUseCaseDiagram) {
             return ModelKind.USECASE;
+        }
+        if (d instanceof org.argouml.sequence2.diagram.UMLSequenceDiagram) {
+            return ModelKind.SEQUENCE;
         }
         return null;
     }
