@@ -10,7 +10,7 @@
 # no real ArgoDiagram is registered because DiagramFactory has no entry for
 # DiagramType.Sequence. See AGENTS.md §"things that will trip you up #4" and
 # `argouml-app/tools/eclipse/ArgoUML (live GEF).launch` for the source list.
-export JAVA_HOME=${JAVA_HOME:-/Library/Java/JavaVirtualMachines/temurin-8.jdk/Contents/Home}
+export JAVA_HOME=${JAVA_HOME:-/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home}
 export PATH=$JAVA_HOME/bin:$PATH
 
 ARGO_HOME=/Users/lxd/Projects/ai/uml-project/argouml
@@ -23,7 +23,7 @@ CP="$ARGO_HOME/src/argouml-build/target/argouml-jar-with-dependencies.jar"
 if [ ! -d /tmp/argouml-deps ] || [ -z "$(ls /tmp/argouml-deps/*.jar 2>/dev/null)" ]; then
     echo "[run-argouml] /tmp/argouml-deps empty; populating from Maven cache..."
     if [ -z "$JAVA_HOME" ]; then
-        export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-8.jdk/Contents/Home
+        export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home
     fi
     if [ -d "$ARGO_HOME/src/argouml-app" ]; then
         mvn -f "$ARGO_HOME/src/argouml-app/pom.xml" \
@@ -75,6 +75,7 @@ if [ -n "$ARGO_LANG" ]; then
 fi
 
 exec java -Xms64m -Xmx1024m \
+  --add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED \
   -ea \
   "-Dargouml.modules=$ARGO_MODULES" \
   $LANG_ARGS \

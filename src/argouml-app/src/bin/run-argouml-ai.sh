@@ -3,7 +3,7 @@
 # prepended to classpath so the FRESH InitHttpServerSubsystem (47 routes,
 # incl. 17 usecase) takes precedence over the stale copy baked into
 # argouml-jar-with-dependencies.jar.
-export JAVA_HOME=${JAVA_HOME:-/Library/Java/JavaVirtualMachines/temurin-8.jdk/Contents/Home}
+export JAVA_HOME=${JAVA_HOME:-/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home}
 export PATH=$JAVA_HOME/bin:$PATH
 
 ARGO_HOME=/Users/lxd/Projects/ai/uml-project/argouml
@@ -53,6 +53,7 @@ if [ -n "$ARGO_LANG" ]; then
 fi
 
 exec java -Xms64m -Xmx1024m \
+  --add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED \
   -ea \
   "-Dargouml.modules=$ARGO_MODULES" \
   $LANG_ARGS \

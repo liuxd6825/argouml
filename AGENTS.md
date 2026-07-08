@@ -119,7 +119,7 @@ A pre-made launcher exists at `src/argouml-app/src/bin/run-argouml.sh`.
 ### 8a. `StandaloneHttpServer.java` 与 `InitHttpServerSubsystem.java` 维护两份 router
 两份代码各有一份 `buildRouter()`,原 Javadoc 注明 _"Kept in sync by hand; if a
 route is added/removed there, update this method too"_。Phase 4 在 InitHttpServerSubsystem
-加了 17 个 usecase 路由(`/d/{d}/usecasediagram/{actors,usecases,...}`),StandaloneHttpServer
+加了 17 个 usecase 路由(`/d/{d}/usecasediagram/actors`,`/d/{d}/usecasediagram/{actors,usecases,...}`),StandaloneHttpServer
 没跟上。症状:启动 `StandaloneHttpServer` 后访问
 `POST /d/{d}/usecasediagram/actors` 返回 404 ROUTE_NOT_FOUND,smoke test 全部失败。
 
@@ -127,6 +127,47 @@ route is added/removed there, update this method too"_。Phase 4 在 InitHttpSer
 `UseCaseDiagramService ucSvc = DiagramServices.useCaseSvc();`,再 import 14 个 usecase
 handler 类,然后末尾追加 17 行 `router.add(Method.X, "/d/{d}/usecasediagram/...", new ...)`。
 mirror `InitHttpServerSubsystem.java:259-296`。
+
+### 9. HiDPI launcher flags (deprecated — see §10)
+
+The two dev-mode launchers (`src/argouml-app/src/bin/run-argouml.sh`
+and `run-argouml-ai.sh`) **previously** set four JVM flags to work
+around Java 8 + Metal LAF font blurriness on macOS Retina / 4K:
+
+- `-Dsun.java2d.uiScale=2`
+- `-Dapple.awt.graphics.UseQuartz=true`
+- `-Dawt.useSystemAAFontSettings=on`
+- `-Dswing.aatext=true`
+
+These are **no longer needed**. Project now runs on OpenJDK 17
+(see §10), which has automatic per-monitor HiDPI scaling.
+
+### 10. Java 17 runtime
+
+The dev-mode launchers (`run-argouml.sh:13`, `run-argouml-ai.sh:8`)
+point `JAVA_HOME` to `jdk-17.jdk` (verified combination):
+
+- Aqua LAF (`com.apple.laf.AquaLookAndFeel`) is still available in
+  Java 17 — the launcher does **not** force a different LAF.
+- The NetBeans MDR backend (`nbmdr-0.0-5.jar` etc. on classpath)
+  still works; `javax.jmi` ships as standalone jars in
+  `/tmp/argouml-deps/`, not in the JDK.
+- HiDPI text scaling is automatic — no `sun.java2d.uiScale` or
+  related flags required.
+- One `--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED` flag
+  is needed (see launcher) because `OSXAdapter` reflectively
+  references `com.apple.eawt.ApplicationListener`. The class itself
+  was removed by Apple in Java 9+; the resulting `ClassNotFoundException`
+  is logged but non-fatal (the GUI still runs, just without the
+  Mac-specific About / Preferences menu handlers).
+- Build (`mvn package`) still compiles with `maven-compiler-plugin
+  2.3.1` against Java 8 source level (see §7). The launcher
+  targets Java 17 at runtime but compiled classes are bytecode-
+  compatible (Java 8 class file major version 52, runnable on
+  Java 17).
+- The previous "Verified working combination" was Temurin 8
+  (x86_64 via Rosetta on arm64). New verified combination is
+  `jdk-17.jdk` on arm64.
 
 ## Execution gotchas
 
