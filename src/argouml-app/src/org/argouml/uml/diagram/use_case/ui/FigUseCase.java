@@ -585,7 +585,7 @@ public class FigUseCase extends FigCompartmentBox {
         if (extensionPointsFigCompartment == null) {
             extensionPointsFigCompartment = new FigExtensionPointsCompartment(
                     getOwner(),
-                    DEFAULT_COMPARTMENT_BOUNDS, 
+                    DEFAULT_COMPARTMENT_BOUNDS,
                     getSettings());
         }
         return extensionPointsFigCompartment;
