@@ -498,7 +498,7 @@ mvn -pl src/argouml-app test -Dtest=TestProject
   - `src/argouml-app/src/org/argouml/uml/cognitive/critics/ProfileCodeGeneration.java`
 - Persistence manager: `src/argouml-app/src/org/argouml/persistence/PersistenceManager.java`
 - Module loader: `src/argouml-app/src/org/argouml/moduleloader/ModuleLoader2.java`
-- Property panel metadata: `src/argouml-core-umlpropertypanels/src/org/argouml/core/propertypanels/meta/*.xml`
+- Property panel metadata: `src/argouml-core-umlpropertypanels/src/org/argouml/core/propertypanels/model/metamodel*.xml`
 - `.gitignore` already excludes `build`, `target`, `bin`, `DIST` build artifacts.
 
 ## Extension points (where to add features)
@@ -515,6 +515,8 @@ mvn -pl src/argouml-app test -Dtest=TestProject
 | 新增 AI REST 端点 | new `inbound/rest/<kind>/handlers/<subarea>/MyHandler.java` 实现 `IRequestHandler` + 在 `InitHttpServerSubsystem.buildRouter()` 注册 + 加 JUnit 3 测试 |
 | 新增 AI 图类型 | 按上文"argouml-ai REST API"小节中 5 步流程——修改 `ModelKind`、`DiagramOperations`、`DiagramServices`，加 3 个新子包 |
 | Add a DataType to the UML 1.4 Standard profile | append `<UML:DataType>` to `default-uml14.xmi` (XMI 1.2, see "Adding data types to UML 1.4 profile" below) |
+| Add a custom Swing field to a property panel | (1) create the JPanel class with a public `setTarget(Object)` method, (2) edit `model/metamodel.xml` (UML 1.4) and/or `model/metamodel2.xml` (UML 2.x) — **NOT** `meta/panels.xml` (it is not loaded) — to add `<custom-component name="..." class="...ClassName" />` inside the relevant `<panel>`. The XML loader (`MetaDataCache.java:147-168`) auto-recognizes any tag inside a panel via `getElementsByTagName("*")`, and `SwingUIFactory.createControl()` (`SwingUIFactory.java:127-148`) handles the `custom-component` branch via `Class.forName(name).getConstructor().newInstance()` + reflection on `setTarget(Object)` |
+| Add a right-click menu entry to a model element | (1) `extends AbstractActionNavigate` — handles TargetListener / enable-disable plumbing automatically; override `navigateTo(Object)` returning the navigation target or null; (2) implement `ContextActionFactory` (in `org.argouml.ui`) that returns `List<Action>` from `createContextPopupActions(Object)` (return empty list when inapplicable — the menu item then only appears when navigation is possible); (3) register the factory in the relevant `InitXxxDiagram.init()` via `ContextActionFactoryManager.addContextPopupFactory(...)`. The factory is invoked by **both** `FigNodeModelElement.getPopUpActions` (`src/argouml-app/src/org/argouml/uml/diagram/ui/FigNodeModelElement.java:614-630`) — figure popup — and `ExplorerPopup.initMenuCreateModuleActions` (`src/argouml-app/src/org/argouml/ui/explorer/ExplorerPopup.java:479-481`) — Navigator tree popup. Single registration, two locations. Add the i18n key `menu.popup.<your-key>` to `src/argouml-app/src/org/argouml/i18n/menu.properties` and pass it to `super(...)` in the action's constructor |
 
 ### Adding data types to the UML 1.4 "Standard Elements" profile
 
