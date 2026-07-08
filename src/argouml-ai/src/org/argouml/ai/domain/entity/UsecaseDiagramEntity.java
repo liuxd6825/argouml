@@ -20,13 +20,13 @@ package org.argouml.ai.domain.entity;
  * endpoints, the latter is returned by the project-listing
  * endpoint.</p>
  */
-public final class UsecaseDiagramEntity implements DiagramEntity {
+public final class UseCaseDiagramEntity implements DiagramEntity {
 
     private final String uuid;
     private final String name;
     private final String namespace;
 
-    public UsecaseDiagramEntity(String uuid, String name, String namespace) {
+    public UseCaseDiagramEntity(String uuid, String name, String namespace) {
         this.uuid = uuid == null ? "" : uuid;
         this.name = name;
         this.namespace = namespace == null ? "" : namespace;
