@@ -252,6 +252,14 @@
               name = 'FALSE' isSpecification = 'false'/>
           </UML:Enumeration.literal>
         </UML:Enumeration>
+        <UML:DataType xmi.id = '.:0000000000000883' name = 'Date' isSpecification = 'false'
+          isRoot = 'false' isLeaf = 'false' isAbstract = 'false'/>
+        <UML:DataType xmi.id = '.:0000000000000884' name = 'DateTime' isSpecification = 'false'
+          isRoot = 'false' isLeaf = 'false' isAbstract = 'false'/>
+        <UML:DataType xmi.id = '.:0000000000000885' name = 'Time' isSpecification = 'false'
+          isRoot = 'false' isLeaf = 'false' isAbstract = 'false'/>
+        <UML:DataType xmi.id = '.:0000000000000886' name = 'Timestamp' isSpecification = 'false'
+          isRoot = 'false' isLeaf = 'false' isAbstract = 'false'/>
         <UML:TagDefinition xmi.id = '-64--88-0-101--2259be85:11dd526880c:-8000:000000000000E4A7'
           name = 'derived' isSpecification = 'false'>
           <UML:TagDefinition.multiplicity>

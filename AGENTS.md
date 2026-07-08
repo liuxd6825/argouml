@@ -514,6 +514,76 @@ mvn -pl src/argouml-app test -Dtest=TestProject
 | Add a JUnit 3 test | `tests/org/argouml/.../TestXxx.java` extending `TestCase`; `setUp()` **must** call `InitializeModel.initializeDefault()` |
 | 新增 AI REST 端点 | new `inbound/rest/<kind>/handlers/<subarea>/MyHandler.java` 实现 `IRequestHandler` + 在 `InitHttpServerSubsystem.buildRouter()` 注册 + 加 JUnit 3 测试 |
 | 新增 AI 图类型 | 按上文"argouml-ai REST API"小节中 5 步流程——修改 `ModelKind`、`DiagramOperations`、`DiagramServices`，加 3 个新子包 |
+| Add a DataType to the UML 1.4 Standard profile | append `<UML:DataType>` to `default-uml14.xmi` (XMI 1.2, see "Adding data types to UML 1.4 profile" below) |
+
+### Adding data types to the UML 1.4 "Standard Elements" profile
+
+**Where to edit**: `src/argouml-app/src/org/argouml/profile/profiles/uml14/default-uml14.xmi`
+(XMI 1.2; the model root has `name = 'UML 1.4 Standard Elements'` at line 9).
+Loaded once at startup by `InitProfileSubsystem.init()` →
+`ProfileUML.PROFILE_UML14_FILE` (`src/argouml-app/src/org/argouml/profile/internal/ProfileUML.java:109`)
+→ `ResourceModelLoader` → `Model.getXmiReader().parse(...)`.
+
+**Insertion point**: as direct children of `<UML:Namespace.ownedElement>`,
+sibling to the existing `<UML:DataType name='Integer'/>` / `name='String'/>`
+/ `name='UnlimitedInteger'/>` (and the `<UML:Enumeration name='Boolean'/>`)
+— see `default-uml14.xmi:236-254`.
+
+**Template**:
+```xml
+<UML:DataType xmi.id = '.:0000000000000883' name = 'DateTime'
+  isSpecification = 'false' isRoot = 'false' isLeaf = 'false' isAbstract = 'false'/>
+```
+
+**ID rule (hard constraint)** — from `profiles/uml14/README.txt:6-10`:
+> Because the linkages between the XMI files are made by ID, the links are
+> impervious to name changes, but the IDs must be kept stable. For this reason
+> if an element is ever deleted or has its ID changed, a new version of the
+> profile file will be created so that the old version is available for
+> existing projects to continue to access.
+
+→ Use a brand-new id (`.`' short form, or UUID-style long form like
+`andromda-profile-31.xmi` uses). Never reuse or modify existing ids; old
+`.zargo` projects reference them by id. Existing ids span `0x821`–`0x87E`
+(stereotypes / DataTypes), `0x880`–`0x882` (Boolean enum + literals), and
+`0xE4A7`–`0xE4C8` (TagDefinitions). New entries typically start at `0x883`+
+or use UUID form.
+
+**Required after the edit**:
+- `xmllint --noout default-uml14.xmi` — sanity check (ArgoUML itself
+  validates on load and throws `ProfileException` if the file is malformed).
+- `grep -oE "xmi.id = '[^']+'" default-uml14.xmi | sort | uniq -d` — must be
+  empty (id uniqueness).
+- `mvn -pl src/argouml-build -am package` — resource auto-lands in
+  `argouml-jar-with-dependencies.jar` via the `argouml-app` module's
+  classpath.
+- **Restart JVM** — `InitProfileSubsystem.init()` reads the XMI exactly once,
+  no hot-reload. New types only appear in subsequent runs.
+
+**Verify**:
+- GUI: create a class, add an attribute, open the Type dropdown — `Date` /
+  `DateTime` / etc. appear alongside `String` / `Integer`.
+- Programmatic: `ModelUtils.findTypeInModel("DateTime", profile.getProfileModel())`
+  returns a non-null `MDataType`.
+
+**Not the default type**: `ProfileUML.getDefaultTypeStrategy().getDefaultAttributeType()`
+(`ProfileUML.java:505-524`) keeps returning `Integer` by name lookup. New
+types show up in the picker but are not the default. To change the default,
+edit that method (still resolved by name string — just rename `"Integer"`).
+
+**Other profiles in the same directory** (do not edit these by accident):
+- `default-uml14-uml20-subset.xmi` — UML 1.4 ∩ 2.0 subset; already defines
+  the Java primitive DataTypes (`int`, `long`, `boolean`, `void`, …) and a
+  `java.{lang,util,math,net}` class library. Use this if you want a type to
+  *not* pollute the canonical profile.
+- `default-uml14-uml20-deprecated.xmi` — canonical elements marked
+  deprecated in 2.0.
+- `default-uml22.xmi` — UML 2.2 counterpart (XMI 2.1, `<uml:DataType>`);
+  referenced by `ProfileUML` when EUML backend is active.
+- `andromda-profile-{31,32-noextensions}.xmi` — contributed ~75-DataType
+  library (Date, DateTime, Time, Timestamp, Money, Blob, Clob, …). Loaded
+  only when the AndroMDA jar is dropped into `ext/`; not in the default
+  profile set.
 
 ## Git workflow
 
