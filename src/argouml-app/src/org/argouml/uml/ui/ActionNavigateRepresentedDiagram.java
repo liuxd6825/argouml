@@ -10,11 +10,13 @@
 package org.argouml.uml.ui;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.argouml.kernel.Project;
 import org.argouml.kernel.ProjectManager;
 import org.argouml.model.Facade;
 import org.argouml.model.Model;
+import org.argouml.model.RepresentedDiagramLinkCache;
 import org.argouml.uml.diagram.ArgoDiagram;
 
 /**
@@ -27,6 +29,19 @@ import org.argouml.uml.diagram.ArgoDiagram;
  * <p>Extends {@link AbstractActionNavigate} so the
  * TargetListener plumbing (auto enable/disable on selection
  * change) is inherited.</p>
+ *
+ * <p>The UUID lookup consults
+ * {@link RepresentedDiagramLinkCache} (shared with the GUI
+ * property panel and the AI REST service) before falling
+ * back to the model's tagged-value scan. The shared cache
+ * is necessary because the MDR backend's
+ * {@code ExtensionMechanismsHelper.setType(handle, String)}
+ * rejects a String type argument and throws
+ * {@code IllegalArgumentException}; only a real
+ * {@code TagDefinition} is accepted. Without the cache,
+ * any reader that walks the tagged values by
+ * {@code facade.getTag(tv)} returns {@code null} on the
+ * round-trip path and the link is invisible.</p>
  *
  * @author mkl
  */
@@ -49,15 +64,15 @@ public final class ActionNavigateRepresentedDiagram
     /**
      * Static helper shared with
      * {@code UseCaseContextPopupFactory}.
-     * Returns the matching ArgoDiagram or null when the tag is
-     * missing, empty, or its UUID doesn't match any diagram in
-     * the current project.
+     * Returns the matching ArgoDiagram or null when no link is
+     * set or its UUID doesn't match any diagram in the current
+     * project.
      */
     public static ArgoDiagram lookupRepresentedDiagram(Object useCase) {
         if (useCase == null || !Model.getFacade().isAUseCase(useCase)) {
             return null;
         }
-        String uuid = readTag(useCase);
+        String uuid = readUuid(useCase);
         if (uuid == null || uuid.isEmpty()) {
             return null;
         }
@@ -80,6 +95,27 @@ public final class ActionNavigateRepresentedDiagram
             }
         }
         return null;
+    }
+
+    /**
+     * Read the stored diagram UUID for a UseCase. Consults
+     * the shared {@link RepresentedDiagramLinkCache} first
+     * (populated by the GUI panel and the AI REST service on
+     * write), then falls back to the model's tagged-value
+     * scan. Successful model reads refill the cache so a
+     * subsequent call avoids the model walk.
+     */
+    private static String readUuid(Object useCase) {
+        List<String> cached = RepresentedDiagramLinkCache.getAll(useCase);
+        if (!cached.isEmpty()) {
+            return cached.get(0);
+        }
+        String fromTag = readTag(useCase);
+        if (!fromTag.isEmpty()) {
+            RepresentedDiagramLinkCache.put(useCase,
+                    java.util.Collections.singletonList(fromTag));
+        }
+        return fromTag;
     }
 
     private static String readTag(Object useCase) {
