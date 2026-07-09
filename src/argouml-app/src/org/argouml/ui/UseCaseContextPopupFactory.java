@@ -14,44 +14,29 @@ import java.util.List;
 
 import javax.swing.Action;
 
+import org.argouml.kernel.ActionList;
 import org.argouml.model.Model;
 import org.argouml.uml.diagram.ArgoDiagram;
+import org.argouml.uml.ui.ActionJumpToRepresentedDiagram;
+import org.argouml.uml.ui.ActionManageRepresentedDiagrams;
 import org.argouml.uml.ui.ActionNavigateRepresentedDiagram;
 
-/**
- * {@link ContextActionFactory} that injects the
- * {@code "Jump to Represented Diagram"} right-click menu entry
- * on UseCase elements. Used by both
- * {@link org.argouml.uml.diagram.ui.FigNodeModelElement#getPopUpActions}
- * (figure popup) and
- * {@link org.argouml.ui.explorer.ExplorerPopup} (Navigator tree
- * popup).
- *
- * <p>Returns an empty list when the target is not a UseCase or
- * when the UseCase has no {@code representedDiagram} tagged
- * value, so the menu item only appears when navigation is
- * possible.</p>
- *
- * @author mkl
- */
-public final class UseCaseContextPopupFactory
-        implements ContextActionFactory {
+public final class UseCaseContextPopupFactory implements ContextActionFactory {
 
     @Override
     public List<Action> createContextPopupActions(Object context) {
-        if (context == null) {
+        if (context == null || !Model.getFacade().isAUseCase(context)) {
             return Collections.emptyList();
         }
-        if (!Model.getFacade().isAUseCase(context)) {
-            return Collections.emptyList();
+        ActionList menu = new ActionList("menu.popup.related-diagrams");
+        menu.add(new ActionManageRepresentedDiagrams());
+        List<ArgoDiagram> diagrams =
+                ActionNavigateRepresentedDiagram.lookupAllRepresentedDiagrams(context);
+        if (!diagrams.isEmpty()) {
+            for (ArgoDiagram d : diagrams) {
+                menu.add(new ActionJumpToRepresentedDiagram(d));
+            }
         }
-        ArgoDiagram target =
-                ActionNavigateRepresentedDiagram.lookupRepresentedDiagram(
-                        context);
-        if (target == null) {
-            return Collections.emptyList();
-        }
-        return Collections.<Action>singletonList(
-                new ActionNavigateRepresentedDiagram());
+        return Collections.<Action>singletonList(menu);
     }
 }
