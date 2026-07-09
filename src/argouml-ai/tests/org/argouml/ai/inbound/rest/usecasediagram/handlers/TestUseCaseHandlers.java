@@ -9,6 +9,7 @@
  */
 package org.argouml.ai.inbound.rest.usecasediagram.handlers;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,15 +22,19 @@ import org.argouml.ai.application.common.NotFoundException;
 import org.argouml.ai.application.usecasediagram.UseCaseDiagramService;
 import org.argouml.ai.domain.entity.UsecaseUseCaseEntity;
 import org.argouml.ai.inbound.rest.common.ResponseEnvelope;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.AddUseCaseRepresentedDiagramHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.CreateUseCaseHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCaseByNameHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCaseByUuidHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByNameHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByUuidHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCaseRepresentedDiagramsHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCasesHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.MoveUseCaseHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.RemoveUseCaseRepresentedDiagramHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.SetUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.SetUseCaseRepresentedDiagramsHandler;
 import org.argouml.ai.infrastructure.json.JsonBodyReader;
 import org.argouml.kernel.Project;
 import org.argouml.kernel.ProjectManager;
@@ -328,6 +333,162 @@ public class TestUseCaseHandlers extends TestCase {
         } catch (NotFoundException expected) {
             assertEquals("USECASE_NOT_FOUND", expected.code());
         }
+    }
+
+    // ---- 1:N represented-diagram endpoint tests ----
+
+    public void testSetReplacesAllRepresentedDiagrams() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"SetAll\"}");
+        Map<String, String> m = pp();
+        m.put("u", "SetAll");
+        ResponseEnvelope env = new SetUseCaseRepresentedDiagramsHandler(svc)
+                .handle(m, new HashMap<String, String>(),
+                        "{\"diagramUuids\":[\"u1\",\"u2\",\"u3\"]}");
+        assertEquals(200, env.status);
+        @SuppressWarnings("unchecked")
+        List<String> uuids = (List<String>) unwrapData(env.body)
+                .get("representedDiagramUuids");
+        assertEquals(Arrays.asList("u1","u2","u3"), uuids);
+    }
+
+    public void testAddAppendsRepresentedDiagram() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"AddOne\"}");
+        Map<String, String> m = pp();
+        m.put("u", "AddOne");
+        new SetUseCaseRepresentedDiagramsHandler(svc).handle(m,
+                new HashMap<String, String>(),
+                "{\"diagramUuids\":[\"u1\"]}");
+        ResponseEnvelope env = new AddUseCaseRepresentedDiagramHandler(svc)
+                .handle(m, new HashMap<String, String>(),
+                        "{\"diagramUuid\":\"u2\"}");
+        assertEquals(200, env.status);
+        @SuppressWarnings("unchecked")
+        List<String> uuids = (List<String>) svc
+                .listUseCaseRepresentedDiagrams(DIAGRAM, unwrapUseCaseUuid("AddOne"));
+        assertTrue(uuids.contains("u1"));
+        assertTrue(uuids.contains("u2"));
+    }
+
+    public void testAddDuplicateReturns409() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Dup\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Dup");
+        new SetUseCaseRepresentedDiagramsHandler(svc).handle(m,
+                new HashMap<String, String>(),
+                "{\"diagramUuids\":[\"u1\"]}");
+        ResponseEnvelope env = new AddUseCaseRepresentedDiagramHandler(svc)
+                .handle(m, new HashMap<String, String>(),
+                        "{\"diagramUuid\":\"u1\"}");
+        assertEquals(409, env.status);
+    }
+
+    public void testRemoveReturns204() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Rem\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Rem");
+        new SetUseCaseRepresentedDiagramsHandler(svc).handle(m,
+                new HashMap<String, String>(),
+                "{\"diagramUuids\":[\"u1\",\"u2\"]}");
+        Map<String, String> rmM = new HashMap<String, String>(m);
+        rmM.put("uuid", "u2");
+        ResponseEnvelope env = new RemoveUseCaseRepresentedDiagramHandler(svc)
+                .handle(rmM, new HashMap<String, String>(), "");
+        assertEquals(204, env.status);
+        @SuppressWarnings("unchecked")
+        List<String> uuids = (List<String>) svc
+                .listUseCaseRepresentedDiagrams(DIAGRAM, unwrapUseCaseUuid("Rem"));
+        assertFalse(uuids.contains("u2"));
+        assertTrue(uuids.contains("u1"));
+    }
+
+    public void testRemoveMissingUuidReturns404() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Rem404\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Rem404");
+        Map<String, String> rmM = new HashMap<String, String>(m);
+        rmM.put("uuid", "nonexistent-uuid");
+        ResponseEnvelope env = new RemoveUseCaseRepresentedDiagramHandler(svc)
+                .handle(rmM, new HashMap<String, String>(), "");
+        assertEquals(404, env.status);
+    }
+
+    public void testListMultipleRepresentedDiagrams() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Listed\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Listed");
+        new SetUseCaseRepresentedDiagramsHandler(svc).handle(m,
+                new HashMap<String, String>(),
+                "{\"diagramUuids\":[\"l1\",\"l2\"]}");
+        Map<String, String> getM = pp();
+        getM.put("uuid", unwrapUseCaseUuid("Listed"));
+        ResponseEnvelope env = new ListUseCaseRepresentedDiagramsHandler(svc)
+                .handle(getM, new HashMap<String, String>(), "");
+        assertEquals(200, env.status);
+        @SuppressWarnings("unchecked")
+        List<String> uuids = (List<String>) unwrapData(env.body)
+                .get("diagramUuids");
+        assertEquals(2, uuids.size());
+        assertTrue(uuids.contains("l1"));
+        assertTrue(uuids.contains("l2"));
+    }
+
+    public void testAddBodyMissingDiagramUuidReturns400() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Add400\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Add400");
+        ResponseEnvelope env = new AddUseCaseRepresentedDiagramHandler(svc)
+                .handle(m, new HashMap<String, String>(), "{}");
+        assertEquals(400, env.status);
+    }
+
+    public void testLegacySingleUuidEndpointReturnsFirst() {
+        new CreateUseCaseHandler(svc).handle(pp(),
+                new HashMap<String, String>(),
+                "{\"name\":\"Legacy\"}");
+        Map<String, String> m = pp();
+        m.put("u", "Legacy");
+        new SetUseCaseRepresentedDiagramsHandler(svc).handle(m,
+                new HashMap<String, String>(),
+                "{\"diagramUuids\":[\"x\",\"y\",\"z\"]}");
+        Map<String, String> getM = pp();
+        getM.put("uuid", unwrapUseCaseUuid("Legacy"));
+        ResponseEnvelope env = new GetUseCaseRepresentedDiagramHandler(svc)
+                .handle(getM, new HashMap<String, String>(), "");
+        assertEquals(200, env.status);
+        assertEquals("x", unwrapData(env.body).get("diagramUuid"));
+    }
+
+    /** Helper: get UUID of a UseCase by name (used in tests). */
+    private String unwrapUseCaseUuid(String name) {
+        ResponseEnvelope e = new ListUseCasesHandler(svc).handle(
+                pp(), new HashMap<String, String>(), "");
+        Map<String, Object> env = JsonBodyReader.readMap(e.body);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> data =
+                (List<Map<String, Object>>) env.get("data");
+        if (data == null) {
+            return "";
+        }
+        for (Map<String, Object> row : data) {
+            if (name.equals(row.get("name"))) {
+                return (String) row.get("uuid");
+            }
+        }
+        return "";
     }
 
     @SuppressWarnings("unchecked")
