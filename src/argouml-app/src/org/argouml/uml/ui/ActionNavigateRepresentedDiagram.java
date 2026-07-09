@@ -9,48 +9,18 @@
  */
 package org.argouml.uml.ui;
 
-import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.argouml.ai.domain.usecasediagram.UseCaseOperations;
 import org.argouml.kernel.Project;
 import org.argouml.kernel.ProjectManager;
 import org.argouml.model.Facade;
 import org.argouml.model.Model;
-import org.argouml.model.RepresentedDiagramLinkCache;
 import org.argouml.uml.diagram.ArgoDiagram;
 
-/**
- * Right-click / popup menu action: jump from a UseCase to the
- * ArgoDiagram referenced by its {@code representedDiagram}
- * tagged value. Visible only when the tag is set; the parent
- * {@code UseCaseContextPopupFactory} filters out null results
- * before they reach the menu.
- *
- * <p>Extends {@link AbstractActionNavigate} so the
- * TargetListener plumbing (auto enable/disable on selection
- * change) is inherited.</p>
- *
- * <p>The UUID lookup consults
- * {@link RepresentedDiagramLinkCache} (shared with the GUI
- * property panel and the AI REST service) before falling
- * back to the model's tagged-value scan. The shared cache
- * is necessary because the MDR backend's
- * {@code ExtensionMechanismsHelper.setType(handle, String)}
- * rejects a String type argument and throws
- * {@code IllegalArgumentException}; only a real
- * {@code TagDefinition} is accepted. Without the cache,
- * any reader that walks the tagged values by
- * {@code facade.getTag(tv)} returns {@code null} on the
- * round-trip path and the link is invisible.</p>
- *
- * @author mkl
- */
-public final class ActionNavigateRepresentedDiagram
-        extends AbstractActionNavigate {
-
+public final class ActionNavigateRepresentedDiagram extends AbstractActionNavigate {
     private static final long serialVersionUID = 1L;
-
-    private static final String TAG_NAME = "representedDiagram";
 
     public ActionNavigateRepresentedDiagram() {
         super("menu.popup.jump-to-represented-diagram", true);
@@ -58,82 +28,47 @@ public final class ActionNavigateRepresentedDiagram
 
     @Override
     protected Object navigateTo(Object source) {
-        return lookupRepresentedDiagram(source);
+        List<ArgoDiagram> all = lookupAllRepresentedDiagrams(source);
+        return all.isEmpty() ? null : all.get(0);
     }
 
     /**
-     * Static helper shared with
-     * {@code UseCaseContextPopupFactory}.
-     * Returns the matching ArgoDiagram or null when no link is
-     * set or its UUID doesn't match any diagram in the current
-     * project.
+     * Static: walk every ArgoDiagram and return the ones whose
+     * name or namespace UUID matches any uuid in the use case's
+     * link list. Insertion order follows the link list.
      */
-    public static ArgoDiagram lookupRepresentedDiagram(Object useCase) {
+    public static List<ArgoDiagram> lookupAllRepresentedDiagrams(Object useCase) {
+        List<ArgoDiagram> result = new ArrayList<ArgoDiagram>();
         if (useCase == null || !Model.getFacade().isAUseCase(useCase)) {
-            return null;
+            return result;
         }
-        String uuid = readUuid(useCase);
-        if (uuid == null || uuid.isEmpty()) {
-            return null;
-        }
+        List<String> uuids = UseCaseOperations.getRepresentedDiagrams(useCase);
+        if (uuids.isEmpty()) return result;
         Project project = ProjectManager.getManager().getCurrentProject();
-        if (project == null) {
-            return null;
-        }
+        if (project == null) return result;
         Facade facade = Model.getFacade();
         for (Object d : project.getDiagramList()) {
-            if (!(d instanceof ArgoDiagram)) {
-                continue;
-            }
+            if (!(d instanceof ArgoDiagram)) continue;
             ArgoDiagram ad = (ArgoDiagram) d;
-            if (uuid.equals(ad.getName())) {
-                return ad;
+            if (matches(ad, uuids, facade)) {
+                result.add(ad);
             }
+        }
+        return result;
+    }
+
+    /** Legacy single-diagram helper - returns the first match or null. */
+    public static ArgoDiagram lookupRepresentedDiagram(Object useCase) {
+        List<ArgoDiagram> all = lookupAllRepresentedDiagrams(useCase);
+        return all.isEmpty() ? null : all.get(0);
+    }
+
+    private static boolean matches(ArgoDiagram ad, List<String> uuids, Facade facade) {
+        for (String uuid : uuids) {
+            if (uuid.equals(ad.getName())) return true;
             Object ns = ad.getNamespace();
-            if (ns != null && uuid.equals(facade.getUUID(ns))) {
-                return ad;
-            }
+            if (ns != null && uuid.equals(facade.getUUID(ns))) return true;
         }
-        return null;
-    }
-
-    /**
-     * Read the stored diagram UUID for a UseCase. Consults
-     * the shared {@link RepresentedDiagramLinkCache} first
-     * (populated by the GUI panel and the AI REST service on
-     * write), then falls back to the model's tagged-value
-     * scan. Successful model reads refill the cache so a
-     * subsequent call avoids the model walk.
-     */
-    private static String readUuid(Object useCase) {
-        List<String> cached = RepresentedDiagramLinkCache.getAll(useCase);
-        if (!cached.isEmpty()) {
-            return cached.get(0);
-        }
-        String fromTag = readTag(useCase);
-        if (!fromTag.isEmpty()) {
-            RepresentedDiagramLinkCache.put(useCase,
-                    java.util.Collections.singletonList(fromTag));
-        }
-        return fromTag;
-    }
-
-    private static String readTag(Object useCase) {
-        try {
-            Facade facade = Model.getFacade();
-            Iterator tvs = facade.getTaggedValues(useCase);
-            if (tvs == null) {
-                return "";
-            }
-            while (tvs.hasNext()) {
-                Object tv = tvs.next();
-                if (TAG_NAME.equals(facade.getName(tv))) {
-                    Object v = facade.getValue(tv);
-                    return v == null ? "" : v.toString();
-                }
-            }
-        } catch (RuntimeException ignored) {
-        }
-        return "";
+        return false;
     }
 }
