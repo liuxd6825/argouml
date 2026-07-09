@@ -38,7 +38,7 @@ public final class UsecaseUseCaseEntity implements ElementEntity {
                          List<String> representedDiagramUuids,
                          String diagramUuid, int x, int y) {
         this.uuid = uuid == null ? "" : uuid;
-        this.name = name;
+        this.name = name == null ? "" : name;
         this.description = description == null ? "" : description;
         this.representedDiagramUuids = representedDiagramUuids == null
                 ? Collections.<String>emptyList()
