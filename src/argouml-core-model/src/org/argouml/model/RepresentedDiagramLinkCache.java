@@ -18,9 +18,9 @@ import java.util.WeakHashMap;
 
 /**
  * In-memory cache for the {@code UseCase.representedDiagram} link
- * (now 1:N — a UseCase may link to multiple ArgoDiagrams).
+ * (now 1:N - a UseCase may link to multiple ArgoDiagrams).
  *
- * <p>See previous design notes — MDR {@code setType(handle, String)}
+ * <p>See previous design notes - MDR {@code setType(handle, String)}
  * rejects a String type argument, so the model's tagged-value
  * round-trip is best-effort. This cache is the authoritative
  * store for the link set across all consumers (property panel,
