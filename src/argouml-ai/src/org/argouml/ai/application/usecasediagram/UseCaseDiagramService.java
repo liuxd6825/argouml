@@ -10,7 +10,7 @@
 package org.argouml.ai.application.usecasediagram;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 
 import org.argouml.ai.application.common.AbstractDiagramServiceHelper;
@@ -31,7 +31,6 @@ import org.argouml.ai.domain.usecasediagram.IncludeOperations;
 import org.argouml.ai.domain.usecasediagram.UseCaseOperations;
 import org.argouml.model.Facade;
 import org.argouml.model.Model;
-import org.argouml.model.RepresentedDiagramLinkCache;
 import org.argouml.uml.diagram.ArgoDiagram;
 import org.tigris.gef.graph.MutableGraphModel;
 
@@ -247,7 +246,8 @@ public final class UseCaseDiagramService implements DiagramService {
             Object useCase = USE_CASE_OPS.build(d, name, description);
             USE_CASE_OPS.setPosition(d, useCase, x, y);
             return new UsecaseUseCaseEntity(uuidOf(useCase), name,
-                    description, "", diagramUuidOf(d), x, y);
+                    description, Collections.<String>emptyList(),
+                    diagramUuidOf(d), x, y);
         }
     }
 
@@ -262,7 +262,7 @@ public final class UseCaseDiagramService implements DiagramService {
                 String name = facade.getName(node);
                 String desc = readDescription(node);
                 out.add(new UsecaseUseCaseEntity(uuidOf(node), name, desc,
-                        readRepresentedDiagram(node),
+                        UseCaseOperations.getRepresentedDiagrams(node),
                         dUuid, xOf(d, node), yOf(d, node)));
             }
         }
@@ -279,7 +279,8 @@ public final class UseCaseDiagramService implements DiagramService {
                     + diagramName + "'");
         }
         return new UsecaseUseCaseEntity(uuidOf(useCase), name,
-                readDescription(useCase), readRepresentedDiagram(useCase),
+                readDescription(useCase),
+                UseCaseOperations.getRepresentedDiagrams(useCase),
                 diagramUuidOf(d),
                 xOf(d, useCase), yOf(d, useCase));
     }
@@ -295,7 +296,8 @@ public final class UseCaseDiagramService implements DiagramService {
         }
         Facade facade = Model.getFacade();
         return new UsecaseUseCaseEntity(uuidOf(useCase), facade.getName(useCase),
-                readDescription(useCase), readRepresentedDiagram(useCase),
+                readDescription(useCase),
+                UseCaseOperations.getRepresentedDiagrams(useCase),
                 diagramUuidOf(d),
                 xOf(d, useCase), yOf(d, useCase));
     }
@@ -341,7 +343,8 @@ public final class UseCaseDiagramService implements DiagramService {
             USE_CASE_OPS.setPosition(d, useCase, x, y);
         }
         return new UsecaseUseCaseEntity(uuidOf(useCase), name,
-                readDescription(useCase), readRepresentedDiagram(useCase),
+                readDescription(useCase),
+                UseCaseOperations.getRepresentedDiagrams(useCase),
                 diagramUuidOf(d), x, y);
     }
 
@@ -367,15 +370,14 @@ public final class UseCaseDiagramService implements DiagramService {
         }
         String normalized = representedDiagramUuid == null
                 ? "" : representedDiagramUuid;
-        RepresentedDiagramLinkCache.put(useCase,
-                java.util.Collections.singletonList(normalized));
         try (UndoScope s = UndoScope.open(
                 "LinkUseCase:" + name + "->" + normalized)) {
             UseCaseOperations.setRepresentedDiagram(useCase, normalized);
         }
         org.tigris.gef.presentation.Fig fig = d.presentationFor(useCase);
         return new UsecaseUseCaseEntity(uuidOf(useCase), name,
-                readDescription(useCase), normalized,
+                readDescription(useCase),
+                UseCaseOperations.getRepresentedDiagrams(useCase),
                 diagramUuidOf(d),
                 fig == null ? 0 : fig.getX(),
                 fig == null ? 0 : fig.getY());
@@ -383,12 +385,78 @@ public final class UseCaseDiagramService implements DiagramService {
 
     /**
      * Read the {@code representedDiagram} UUID stored on a
-     * UseCase. Reads from the in-memory cache first (filled by
-     * {@link #setUseCaseRepresentedDiagram}); falls back to the
-     * tagged-value lookup if the cache misses. Returns {@code ""}
-     * when no link is set.
+     * UseCase. Convenience wrapper around
+     * {@link #listUseCaseRepresentedDiagrams} that returns the
+     * first linked UUID, or {@code ""} when no link is set.
      */
     public String getUseCaseRepresentedDiagram(
+            String diagramName, String useCaseUuid) {
+        List<String> all = listUseCaseRepresentedDiagrams(
+                diagramName, useCaseUuid);
+        return all.isEmpty() ? "" : all.get(0);
+    }
+
+    /**
+     * Replace the entire set of {@code representedDiagram} UUIDs
+     * linked to a UseCase. Empty list clears all links.
+     * Returns the refreshed entity.
+     */
+    public UsecaseUseCaseEntity setUseCaseRepresentedDiagrams(
+            String diagramName, String name, List<String> uuids) {
+        ArgoDiagram d = requireDiagram(diagramName);
+        requireUseCaseDiagram(d);
+        Object useCase = USE_CASE_OPS.findByName(d, name);
+        if (useCase == null) {
+            throw new NotFoundException("USECASE_NOT_FOUND",
+                    "UseCase '" + name + "' not found on diagram '"
+                    + diagramName + "'");
+        }
+        UseCaseOperations.setRepresentedDiagrams(useCase, uuids);
+        return findUseCaseByUuid(diagramName, uuidOf(useCase));
+    }
+
+    /**
+     * Append a single {@code representedDiagram} UUID to a
+     * UseCase. Idempotent: returns {@code false} if the UUID is
+     * already linked.
+     */
+    public boolean addUseCaseRepresentedDiagram(
+            String diagramName, String name, String uuid) {
+        ArgoDiagram d = requireDiagram(diagramName);
+        requireUseCaseDiagram(d);
+        Object useCase = USE_CASE_OPS.findByName(d, name);
+        if (useCase == null) {
+            throw new NotFoundException("USECASE_NOT_FOUND",
+                    "UseCase '" + name + "' not found on diagram '"
+                    + diagramName + "'");
+        }
+        return UseCaseOperations.addRepresentedDiagram(useCase, uuid);
+    }
+
+    /**
+     * Remove a single {@code representedDiagram} UUID from a
+     * UseCase. Returns {@code true} when removed, {@code false}
+     * when the UUID was not linked.
+     */
+    public boolean removeUseCaseRepresentedDiagram(
+            String diagramName, String name, String uuid) {
+        ArgoDiagram d = requireDiagram(diagramName);
+        requireUseCaseDiagram(d);
+        Object useCase = USE_CASE_OPS.findByName(d, name);
+        if (useCase == null) {
+            throw new NotFoundException("USECASE_NOT_FOUND",
+                    "UseCase '" + name + "' not found on diagram '"
+                    + diagramName + "'");
+        }
+        return UseCaseOperations.removeRepresentedDiagram(useCase, uuid);
+    }
+
+    /**
+     * List every {@code representedDiagram} UUID currently linked
+     * to a UseCase (lookup by uuid). Empty list when no links
+     * are set.
+     */
+    public List<String> listUseCaseRepresentedDiagrams(
             String diagramName, String useCaseUuid) {
         ArgoDiagram d = requireDiagram(diagramName);
         requireUseCaseDiagram(d);
@@ -398,11 +466,7 @@ public final class UseCaseDiagramService implements DiagramService {
                     "UseCase uuid '" + useCaseUuid + "' not found on diagram '"
                     + diagramName + "'");
         }
-        String cached = readRepresentedDiagram(useCase);
-        if (!cached.isEmpty()) {
-            return cached;
-        }
-        return "";
+        return UseCaseOperations.getRepresentedDiagrams(useCase);
     }
 
     // ---- Relationships ----
@@ -759,18 +823,5 @@ public final class UseCaseDiagramService implements DiagramService {
 
     private static String readDescription(Object useCase) {
         return UseCaseOperations.getDescription(useCase);
-    }
-
-    private static String readRepresentedDiagram(Object useCase) {
-        List<String> cached = RepresentedDiagramLinkCache.getAll(useCase);
-        if (!cached.isEmpty()) {
-            return cached.get(0);
-        }
-        String fromTag = UseCaseOperations.getRepresentedDiagram(useCase);
-        if (!fromTag.isEmpty()) {
-            RepresentedDiagramLinkCache.put(useCase,
-                    java.util.Collections.singletonList(fromTag));
-        }
-        return fromTag;
     }
 }
