@@ -55,8 +55,14 @@ import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCase
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.DeleteUseCaseByUuidHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByNameHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseByUuidHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.AddUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.GetUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCaseRepresentedDiagramsHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.ListUseCasesHandler;
 import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.MoveUseCaseHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.RemoveUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.SetUseCaseRepresentedDiagramHandler;
+import org.argouml.ai.inbound.rest.usecasediagram.handlers.usecase.SetUseCaseRepresentedDiagramsHandler;
 import org.argouml.ai.inbound.rest.sequencediagram.handlers.GetDiagramStateHandler;
 import org.argouml.ai.inbound.rest.sequencediagram.handlers.ListLayerFigsHandler;
 import org.argouml.ai.inbound.rest.sequencediagram.handlers.lifeline.CreateLifelineHandler;
@@ -312,6 +318,26 @@ public class InitHttpServerSubsystem implements InitSubsystem {
                 new DeleteUseCaseByNameHandler(ucSvc));
         router.add(Method.DELETE, "/d/{d}/usecasediagram/usecases/{uuid}",
                 new DeleteUseCaseByUuidHandler(ucSvc));
+        // UseCase -> representedDiagram link
+        router.add(Method.PUT,
+                "/d/{d}/usecasediagram/usecases/by-name/{u}/representedDiagram",
+                new SetUseCaseRepresentedDiagramHandler(ucSvc));
+        router.add(Method.GET,
+                "/d/{d}/usecasediagram/usecases/{uuid}/representedDiagram",
+                new GetUseCaseRepresentedDiagramHandler(ucSvc));
+        // UseCase -> representedDiagram (1:N) endpoints
+        router.add(Method.PUT,
+                "/d/{d}/usecasediagram/usecases/by-name/{u}/representedDiagrams",
+                new SetUseCaseRepresentedDiagramsHandler(ucSvc));
+        router.add(Method.GET,
+                "/d/{d}/usecasediagram/usecases/{uuid}/representedDiagrams",
+                new ListUseCaseRepresentedDiagramsHandler(ucSvc));
+        router.add(Method.POST,
+                "/d/{d}/usecasediagram/usecases/by-name/{u}/representedDiagram",
+                new AddUseCaseRepresentedDiagramHandler(ucSvc));
+        router.add(Method.DELETE,
+                "/d/{d}/usecasediagram/usecases/by-name/{u}/representedDiagram/{uuid}",
+                new RemoveUseCaseRepresentedDiagramHandler(ucSvc));
         // Relationships
         router.add(Method.POST, "/d/{d}/usecasediagram/associations",
                 new CreateAssociationHandler(ucSvc));
