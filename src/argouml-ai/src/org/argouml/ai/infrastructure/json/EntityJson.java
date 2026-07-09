@@ -179,6 +179,7 @@ public final class EntityJson {
         m.put("name", e.name());
         m.put("kind", e.kind());
         m.put("description", e.description());
+        m.put("representedDiagramUuids", e.representedDiagramUuids());
         m.put("diagramUuid", e.diagramUuid());
         m.put("x", e.x());
         m.put("y", e.y());
