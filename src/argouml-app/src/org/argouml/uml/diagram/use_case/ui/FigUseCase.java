@@ -47,6 +47,7 @@ import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
@@ -55,6 +56,7 @@ import javax.swing.Action;
 import org.argouml.model.Model;
 import org.argouml.ui.ArgoJMenu;
 import org.argouml.ui.targetmanager.TargetManager;
+import org.argouml.uml.diagram.ArgoDiagram;
 import org.argouml.uml.diagram.DiagramSettings;
 import org.argouml.uml.diagram.ui.ActionAddExtensionPoint;
 import org.argouml.uml.diagram.ui.ActionAddNote;
@@ -62,6 +64,8 @@ import org.argouml.uml.diagram.ui.ActionCompartmentDisplay;
 import org.argouml.uml.diagram.ui.FigCompartment;
 import org.argouml.uml.diagram.ui.FigCompartmentBox;
 import org.argouml.uml.diagram.ui.FigExtensionPointsCompartment;
+import org.argouml.uml.diagram.ui.FigSingleLineText;
+import org.argouml.uml.ui.ActionNavigateRepresentedDiagram;
 import org.tigris.gef.base.Selection;
 import org.tigris.gef.presentation.Fig;
 import org.tigris.gef.presentation.FigCircle;
@@ -130,6 +134,12 @@ public class FigUseCase extends FigCompartmentBox {
      * The Fig for the extensionPoints compartment (if any).
      */
     private FigExtensionPointsCompartment extensionPointsFigCompartment;
+
+    /**
+     * Indicator fig (\u221e) shown at top-right of the use case oval
+     * when at least one represented diagram link is set on the owner.
+     */
+    private FigSingleLineText linkIndicatorFig;
     
     /**
      * Initialization which is common to multiple constructors.<p>
@@ -162,6 +172,15 @@ public class FigUseCase extends FigCompartmentBox {
         addFig(getNameFig());
         // stereotype fig covers the name fig:
         addFig(getStereotypeFig());
+        linkIndicatorFig = new FigSingleLineText(
+                new Rectangle(0, 0, 12, 12),
+                getSettings(), false);
+        linkIndicatorFig.setText("\u221e");
+        linkIndicatorFig.setEditable(false);
+        linkIndicatorFig.setLineWidth(0);
+        linkIndicatorFig.setFilled(false);
+        linkIndicatorFig.setVisible(false);
+        addFig(linkIndicatorFig);
         addFig(epc);
         addFig(separatorFig);
 
@@ -293,6 +312,31 @@ public class FigUseCase extends FigCompartmentBox {
      */
     public void setExtensionPointsVisible(boolean isVisible) {
         setCompartmentVisible(extensionPointsFigCompartment, isVisible);
+    }
+
+    /**
+     * Show or hide the infinity (\u221e) link indicator based on whether
+     * the owning UseCase has any represented-diagram links. When shown,
+     * the indicator is positioned at the top-right of the ellipse.
+     */
+    private void updateLinkIndicator() {
+        Object owner = getOwner();
+        if (owner == null || linkIndicatorFig == null) {
+            return;
+        }
+        List<ArgoDiagram> all =
+                ActionNavigateRepresentedDiagram.lookupAllRepresentedDiagrams(owner);
+        boolean show = !all.isEmpty();
+        linkIndicatorFig.setVisible(show);
+        if (show) {
+            Rectangle bounds = getBigPort().getBounds();
+            if (bounds != null) {
+                linkIndicatorFig.setLocation(
+                        bounds.x + bounds.width - 14,
+                        bounds.y - 8);
+            }
+        }
+        damage();
     }
 
     /**
@@ -556,6 +600,7 @@ public class FigUseCase extends FigCompartmentBox {
             }
         }
         updateElementListeners(listeners);
+        updateLinkIndicator();
     }
 
     @Override
