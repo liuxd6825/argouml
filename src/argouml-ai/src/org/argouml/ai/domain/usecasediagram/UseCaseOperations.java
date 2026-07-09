@@ -18,6 +18,7 @@ import org.argouml.ai.domain.common.AbstractDiagramElementOperations;
 import org.argouml.model.CoreHelper;
 import org.argouml.model.Facade;
 import org.argouml.model.Model;
+import org.argouml.model.RepresentedDiagramLinkCache;
 import org.argouml.model.UseCasesFactory;
 import org.argouml.uml.diagram.ArgoDiagram;
 
@@ -118,6 +119,32 @@ public final class UseCaseOperations
     }
 
     /**
+     * Persist a link from a UseCase to another ArgoDiagram (single-
+     * uuid convenience wrapper). Empty / null uuid clears the
+     * link. Delegates to {@link #setRepresentedDiagrams} so cache
+     * and model stay in sync with the 1:N path.
+     */
+    public static void setRepresentedDiagram(Object useCase, String diagramUuid) {
+        java.util.List<String> list;
+        if (diagramUuid == null || diagramUuid.isEmpty()) {
+            list = java.util.Collections.emptyList();
+        } else {
+            list = java.util.Collections.singletonList(diagramUuid);
+        }
+        setRepresentedDiagrams(useCase, list);
+    }
+
+    /**
+     * Read the {@code representedDiagram} UUID stored on a
+     * UseCase. Returns the first linked UUID, or {@code ""} if
+     * no link is set. Delegates to {@link #getRepresentedDiagrams}.
+     */
+    public static String getRepresentedDiagram(Object useCase) {
+        java.util.List<String> all = getRepresentedDiagrams(useCase);
+        return all.isEmpty() ? "" : all.get(0);
+    }
+
+    /**
      * List every UseCase node currently on the diagram (in graph-
      * model order, which is the same as the user's view order).
      */
@@ -147,5 +174,100 @@ public final class UseCaseOperations
             return new java.util.ArrayList();
         }
         return Model.getUseCasesHelper().getAllUseCases(ns);
+    }
+
+    /**
+     * Replace all links for a UseCase. Authoritative store is
+     * {@link RepresentedDiagramLinkCache}; tagged-value write is
+     * best-effort (MDR {@code setType(String)} throws).
+     */
+    public static void setRepresentedDiagrams(Object useCase, java.util.Collection<String> diagramUuids) {
+        if (useCase == null) return;
+        java.util.List<String> normalized = diagramUuids == null
+                ? java.util.Collections.<String>emptyList()
+                : sanitizeUuids(diagramUuids);
+        RepresentedDiagramLinkCache.put(useCase, normalized);
+        writeModelTag(useCase, normalized);
+    }
+
+    /** Append a single uuid (idempotent). */
+    public static boolean addRepresentedDiagram(Object useCase, String uuid) {
+        if (useCase == null || uuid == null || uuid.isEmpty()) return false;
+        java.util.List<String> current = new java.util.ArrayList<String>(getRepresentedDiagrams(useCase));
+        if (current.contains(uuid)) return false;
+        current.add(uuid);
+        setRepresentedDiagrams(useCase, current);
+        return true;
+    }
+
+    /** Remove a single uuid. Returns true if removed. */
+    public static boolean removeRepresentedDiagram(Object useCase, String uuid) {
+        if (useCase == null || uuid == null || uuid.isEmpty()) return false;
+        java.util.List<String> current = new java.util.ArrayList<String>(getRepresentedDiagrams(useCase));
+        boolean removed = current.remove(uuid);
+        if (removed) setRepresentedDiagrams(useCase, current);
+        return removed;
+    }
+
+    /**
+     * Return immutable list of currently linked ArgoDiagram UUIDs.
+     * Cache-first (authoritative); model fallback via
+     * {@link org.argouml.model.Facade#getDataValue}.
+     */
+    public static java.util.List<String> getRepresentedDiagrams(Object useCase) {
+        if (useCase == null) return java.util.Collections.emptyList();
+        java.util.List<String> cached = RepresentedDiagramLinkCache.getAll(useCase);
+        if (!cached.isEmpty()) return cached;
+        java.util.List<String> fromTag = readModelTag(useCase);
+        if (!fromTag.isEmpty()) {
+            RepresentedDiagramLinkCache.put(useCase, fromTag);
+        }
+        return fromTag;
+    }
+
+    private static java.util.List<String> sanitizeUuids(java.util.Collection<String> input) {
+        java.util.Set<String> seen = new java.util.LinkedHashSet<String>();
+        for (String s : input) {
+            if (s != null && !s.isEmpty()) seen.add(s);
+        }
+        return new java.util.ArrayList<String>(seen);
+    }
+
+    private static void writeModelTag(Object useCase, java.util.List<String> uuids) {
+        try {
+            org.argouml.model.ExtensionMechanismsFactory emf =
+                    Model.getExtensionMechanismsFactory();
+            org.argouml.model.ExtensionMechanismsHelper emh =
+                    Model.getExtensionMechanismsHelper();
+            Object tv = emf.createTaggedValue();
+            emh.addTaggedValue(useCase, tv);
+            emh.setType(tv, "representedDiagram");
+            emh.setDataValues(tv, uuids.toArray(new String[0]));
+        } catch (RuntimeException ignored) {
+            // best-effort; cache is authoritative
+        }
+    }
+
+    private static java.util.List<String> readModelTag(Object useCase) {
+        try {
+            org.argouml.model.Facade facade = Model.getFacade();
+            java.util.Iterator tvs = facade.getTaggedValues(useCase);
+            if (tvs == null) return java.util.Collections.emptyList();
+            while (tvs.hasNext()) {
+                Object tv = tvs.next();
+                if ("representedDiagram".equals(facade.getName(tv))) {
+                    Object raw = facade.getDataValue(tv);
+                    java.util.List<String> result = new java.util.ArrayList<String>();
+                    if (raw instanceof java.util.Collection) {
+                        for (Object o : (java.util.Collection) raw) {
+                            if (o != null) result.add(String.valueOf(o));
+                        }
+                    }
+                    return result;
+                }
+            }
+        } catch (RuntimeException ignored) {
+        }
+        return java.util.Collections.emptyList();
     }
 }
