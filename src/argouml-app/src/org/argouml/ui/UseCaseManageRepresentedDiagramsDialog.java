@@ -183,7 +183,12 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
             if (UseCaseOperations.addRepresentedDiagram(useCase, uuid)) n++;
         }
         linkedListModel.refresh();
-        JOptionPane.showMessageDialog(this, "Added " + n + " diagram(s).");
+        if (n > 0) {
+            JOptionPane.showMessageDialog(this, "Added " + n + " diagram(s).");
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "All " + toAdd.size() + " selected diagram(s) already linked.");
+        }
     }
 
     private void onRemove() {
@@ -222,7 +227,6 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
         for (Object d : project.getDiagramList()) {
             if (!(d instanceof ArgoDiagram)) continue;
             ArgoDiagram ad = (ArgoDiagram) d;
-            if (uuid.equals(ad.getName())) return ad;
             try {
                 Object ns = ad.getNamespace();
                 if (ns != null && uuid.equals(facade.getUUID(ns))) return ad;
@@ -290,7 +294,7 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
             String name = diagram.getName() == null
                     ? "(unnamed)" : diagram.getName();
             String type = "[" + diagram.getClass().getSimpleName() + "]";
-            return name + "  " + type + "  -  " + pathOf(diagram);
+            return name + " " + type + " - " + pathOf(diagram);
         }
     }
 
