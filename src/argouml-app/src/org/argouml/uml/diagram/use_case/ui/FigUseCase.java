@@ -452,6 +452,28 @@ public class FigUseCase extends FigCompartmentBox {
     }
 
     /**
+     * Override getSubFigBounds to exclude the link indicator from
+     * the parent Fig's bounds union. The indicator is positioned
+     * OUTSIDE the ellipse (at the top-right corner, overlapping
+     * the negative-y region above bigPort). Without this override,
+     * {@link FigGroup#calcBounds} unions its bounds into this
+     * Fig's _x/_y/_w/_h, which then corrupts the resize drag
+     * handler on subsequent drags (handle positions and resize
+     * deltas are computed from these contaminated bounds).
+     *
+     * <p>GEF's design intent (per FigGroup source comment): this
+     * extension point lets a child report an "outer" bounds for
+     * layout purposes without changing its real location.</p>
+     */
+    @Override
+    protected java.awt.Rectangle getSubFigBounds(Fig subFig) {
+        if (subFig == linkIndicatorFig) {
+            return getBigPort().getBounds();
+        }
+        return super.getSubFigBounds(subFig);
+    }
+
+    /**
      * Private utility routine to work out the (positive) x coordinate of a
      * point on an oval, given the radii and y coordinate.<p>
      * TODO: Use this to calculate the separator lines!
