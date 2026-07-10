@@ -344,19 +344,22 @@ public class FigUseCase extends FigCompartmentBox {
         if (show) {
             Rectangle bounds = getBigPort().getBounds();
             if (bounds != null) {
-                // Place the 12x12 infinity symbol on the ellipse's
-                // top-right curve (45 degrees from center). screen Y
-                // is inverted, so -PI/4 yields sin<0 (up).
-                double cx = bounds.x + bounds.width / 2.0;
-                double cy = bounds.y + bounds.height / 2.0;
-                double rx = bounds.width  / 2.0;
-                double ry = bounds.height / 2.0;
-                final double angle = -Math.PI / 4.0;
-                int curveX = (int) Math.round(
-                        cx + rx * Math.cos(angle));
-                int curveY = (int) Math.round(
-                        cy + ry * Math.sin(angle));
-                linkIndicatorFig.setLocation(curveX - 6, curveY - 6);
+                // X: horizontal center of the ellipse. The 12x12
+                // symbol is centered on the X axis by subtracting
+                // half its width (6).
+                int centerX = bounds.x + bounds.width / 2;
+
+                // Y: 14 px (= 12 symbol height + 2 px gap) above the
+                // top of the compartment box, which equals the top of
+                // the topmost visible text -- the stereotype
+                // compartment when visible, otherwise the name.
+                // The same single formula works for both states,
+                // matching the FigProfileIcon GAP=2 convention.
+                Rectangle box = calculateCompartmentBoxDimensions(
+                        bounds.x, bounds.y, bounds.width, bounds.height);
+                int indicatorY = box.y - 14;
+
+                linkIndicatorFig.setLocation(centerX - 6, indicatorY);
             }
         }
         damage();
