@@ -452,6 +452,23 @@ public class FigUseCase extends FigCompartmentBox {
     }
 
     /**
+     * Override setLineWidth to keep the link indicator borderless.
+     * The default parent {@link FigNodeModelElement#setLineWidth}
+     * propagates the new line width to all children, which would
+     * re-paint the black rectangle around the infinity symbol
+     * every time the FigUseCase line width is reset (e.g. during
+     * initialization, after style changes). Mirrors the same
+     * pattern used by {@link FigStereotype}.
+     */
+    @Override
+    public void setLineWidth(int w) {
+        super.setLineWidth(w);
+        if (linkIndicatorFig != null) {
+            linkIndicatorFig.setLineWidth(0);
+        }
+    }
+
+    /**
      * Override getSubFigBounds to exclude the link indicator from
      * the parent Fig's bounds union. The indicator is positioned
      * OUTSIDE the ellipse (at the top-right corner, overlapping
