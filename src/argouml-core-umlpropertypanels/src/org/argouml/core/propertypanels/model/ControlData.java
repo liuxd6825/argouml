@@ -18,28 +18,29 @@ import java.util.Collections;
 import java.util.List;
 
 public class ControlData {
-    
+
     private String controlType;
     private String propertyName;
     private String label;
-    
+    private String className;
+
     private List<Class<?>> types = new ArrayList<Class<?>>();
     private List<CheckBoxData> checkboxes = new ArrayList<CheckBoxData>();
-    
+
     public ControlData(
             final String controlType,
             final String propertyName,
             final String label) {
         this.controlType = controlType;
         this.propertyName = propertyName;
-        
+
         if (label != null && label.length() > 0) {
             this.label = label;
         } else {
             this.label = "label." + propertyName.toLowerCase();
         }
     }
-    
+
     public String getControlType() {
         return controlType;
     }
@@ -47,9 +48,24 @@ public class ControlData {
     public String getPropertyName() {
         return propertyName;
     }
-    
+
     public String getLabel() {
     	return label;
+    }
+
+    /**
+     * Fully-qualified class name of the Swing component to
+     * instantiate for {@code custom-component} controls.
+     * Class must expose a public no-arg constructor and (if it
+     * should track the current selection) a
+     * {@code setTarget(Object)} method.
+     */
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String cn) {
+        this.className = cn;
     }
     
     public List<CheckBoxData> getCheckboxes() {

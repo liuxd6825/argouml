@@ -161,6 +161,12 @@ public class MetaDataCache {
                         controlData.addType(metaType);
                     }
 
+                    final String classAttr =
+                        controlNode.getAttribute("class");
+                    if (classAttr != null && classAttr.length() > 0) {
+                        controlData.setClassName(classAttr);
+                    }
+
                     if (controlNode.getTagName().equals("checkgroup")) {
                         addCheckboxes(controlData, controlNode);
                     }

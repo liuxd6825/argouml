@@ -8,7 +8,7 @@
  *
  * Contributors:
  *    Bob Tarling - Post GSOC improvements
- *    Christian López Espínola
+ *    Christian Lï¿½pez Espï¿½nola
  *    Thomas Neustupny
  *******************************************************************************
  *
@@ -144,6 +144,36 @@ class SwingUIFactory {
             buildTextArea(panel, target, prop);
         } else if ("separator".equals(prop.getControlType())) {
             panel.add(LabelledLayout.getSeparator());
+        } else if ("custom-component".equals(prop.getControlType())) {
+            buildCustomComponent(panel, target, prop);
+        }
+    }
+
+    /**
+     * Instantiate a user-supplied Swing component (by class name
+     * from the XML {@code class} attribute) and bind it to the
+     * current target via reflection on
+     * {@code setTarget(Object)} if present.
+     */
+    private void buildCustomComponent(
+            final JPanel panel,
+            final Object target,
+            final ControlData prop) throws Exception {
+        final String cn = prop.getClassName();
+        if (cn == null || cn.isEmpty()) {
+            panel.add(new javax.swing.JLabel(
+                    "custom-component requires class attribute"));
+            return;
+        }
+        final Class<?> clazz = Class.forName(cn);
+        final java.awt.Component instance =
+                (java.awt.Component) clazz.getConstructor().newInstance();
+        panel.add(instance);
+        try {
+            clazz.getMethod("setTarget", Object.class)
+                    .invoke(instance, target);
+        } catch (NoSuchMethodException ignored) {
+            // optional binding
         }
     }
 

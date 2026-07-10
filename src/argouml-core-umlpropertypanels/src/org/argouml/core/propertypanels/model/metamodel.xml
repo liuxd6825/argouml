@@ -2537,7 +2537,9 @@ The combination of the above allows the GUI to distinguish between
   </panel>
   <panel name="UseCase">
     <text name="name" type="Name" />
-    <combo name="namespace" type="Namespace" />   
+    <combo name="namespace" type="Namespace" />
+    <custom-component name="representedDiagram"
+        class="org.argouml.core.propertypanels.ui.UseCaseRepresentedDiagramField" />
     <checkgroup name="modifiers">
       <checkbox name="isSpecification" type="Boolean" />
       <checkbox name="isRoot" type="Boolean" />
