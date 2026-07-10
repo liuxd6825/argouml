@@ -172,9 +172,22 @@ public class FigUseCase extends FigCompartmentBox {
         addFig(getNameFig());
         // stereotype fig covers the name fig:
         addFig(getStereotypeFig());
+        // The link indicator is an anonymous FigSingleLineText subclass
+        // that overrides setLineWidth to ALWAYS be 0, regardless of
+        // any propagation from parent FigGroup.setLineWidth. Without
+        // this guard, the parent's LINE_WIDTH (1) propagates to every
+        // child during initialize() (line ~191 super.setLineWidth)
+        // and FigNodeModelElement.setLineWidth only re-zeros nameFig
+        // and stereotypeFig, not this one. Mirrors the pattern used
+        // by FigStereotype.
         linkIndicatorFig = new FigSingleLineText(
                 new Rectangle(0, 0, 12, 12),
-                getSettings(), false);
+                getSettings(), false) {
+            @Override
+            public void setLineWidth(int w) {
+                super.setLineWidth(0);
+            }
+        };
         linkIndicatorFig.setText("\u221e");
         linkIndicatorFig.setEditable(false);
         linkIndicatorFig.setLineWidth(0);
@@ -449,23 +462,6 @@ public class FigUseCase extends FigCompartmentBox {
             final int w, final int h) {
         super.setStandardBounds(x, y, w, h);
         updateLinkIndicator();
-    }
-
-    /**
-     * Override setLineWidth to keep the link indicator borderless.
-     * The default parent {@link FigNodeModelElement#setLineWidth}
-     * propagates the new line width to all children, which would
-     * re-paint the black rectangle around the infinity symbol
-     * every time the FigUseCase line width is reset (e.g. during
-     * initialization, after style changes). Mirrors the same
-     * pattern used by {@link FigStereotype}.
-     */
-    @Override
-    public void setLineWidth(int w) {
-        super.setLineWidth(w);
-        if (linkIndicatorFig != null) {
-            linkIndicatorFig.setLineWidth(0);
-        }
     }
 
     /**
