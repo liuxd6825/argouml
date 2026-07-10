@@ -344,9 +344,19 @@ public class FigUseCase extends FigCompartmentBox {
         if (show) {
             Rectangle bounds = getBigPort().getBounds();
             if (bounds != null) {
-                linkIndicatorFig.setLocation(
-                        bounds.x + bounds.width - 14,
-                        bounds.y - 8);
+                // Place the 12x12 infinity symbol on the ellipse's
+                // top-right curve (45 degrees from center). screen Y
+                // is inverted, so -PI/4 yields sin<0 (up).
+                double cx = bounds.x + bounds.width / 2.0;
+                double cy = bounds.y + bounds.height / 2.0;
+                double rx = bounds.width  / 2.0;
+                double ry = bounds.height / 2.0;
+                final double angle = -Math.PI / 4.0;
+                int curveX = (int) Math.round(
+                        cx + rx * Math.cos(angle));
+                int curveY = (int) Math.round(
+                        cy + ry * Math.sin(angle));
+                linkIndicatorFig.setLocation(curveX - 6, curveY - 6);
             }
         }
         damage();
