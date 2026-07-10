@@ -437,6 +437,21 @@ public class FigUseCase extends FigCompartmentBox {
     }
 
     /**
+     * Override setStandardBounds to also reposition the link
+     * indicator (the infinity symbol at the top-right of the
+     * ellipse). The super implementation repositions the bigPort,
+     * nameFig, stereotypeFig and compartments, but does not know
+     * about the link indicator child, so we must reposition it
+     * ourselves. Mirrors the same pattern used by {@link FigActor}.
+     */
+    @Override
+    protected void setStandardBounds(final int x, final int y,
+            final int w, final int h) {
+        super.setStandardBounds(x, y, w, h);
+        updateLinkIndicator();
+    }
+
+    /**
      * Private utility routine to work out the (positive) x coordinate of a
      * point on an oval, given the radii and y coordinate.<p>
      * TODO: Use this to calculate the separator lines!
