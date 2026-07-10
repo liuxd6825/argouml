@@ -10,18 +10,25 @@
 package org.argouml.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
+import javax.swing.ListSelectionModel;
+import javax.swing.AbstractListModel;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -39,19 +46,86 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
     private static final long serialVersionUID = 1L;
 
     private final Object useCase;
-    private final JTree tree;
+    private JTree tree;
+    private JList linkedList;
+    private LinkedListModel linkedListModel;
+    private JLabel linkedListLabel;
 
     public UseCaseManageRepresentedDiagramsDialog(Object useCase) {
         super((Frame) null, "Manage Represented Diagrams", true);
         this.useCase = useCase;
         setLayout(new BorderLayout(8, 8));
-
-        tree = buildTree();
-        add(new JScrollPane(tree), BorderLayout.CENTER);
-
-        add(buildButtonPanel(), BorderLayout.SOUTH);
-        setSize(420, 480);
+        setSize(720, 480);
         setLocationRelativeTo(null);
+
+        add(buildCenterPanel(), BorderLayout.CENTER);
+        add(buildClosePanel(), BorderLayout.SOUTH);
+    }
+
+    private JPanel buildCenterPanel() {
+        JPanel center = new JPanel();
+        center.setLayout(new BoxLayout(center, BoxLayout.X_AXIS));
+
+        // LEFT: Tree
+        JPanel treePanel = new JPanel(new BorderLayout());
+        treePanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        JLabel treeLabel = new JLabel("Available Diagrams");
+        treeLabel.setBorder(BorderFactory.createEmptyBorder(2, 4, 4, 4));
+        treePanel.add(treeLabel, BorderLayout.NORTH);
+        tree = buildTree();
+        JScrollPane treeScroll = new JScrollPane(tree);
+        treeScroll.setPreferredSize(new Dimension(300, 380));
+        treePanel.add(treeScroll, BorderLayout.CENTER);
+        center.add(treePanel);
+
+        // CENTER: Add / Remove buttons (vertically)
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
+        buttonPanel.setPreferredSize(new Dimension(80, 380));
+        buttonPanel.add(Box.createVerticalGlue());
+        JButton addBtn = new JButton("Add >");
+        addBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE,
+                addBtn.getPreferredSize().height));
+        JButton removeBtn = new JButton("< Remove");
+        removeBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE,
+                removeBtn.getPreferredSize().height));
+        addBtn.addActionListener(e -> onAdd());
+        removeBtn.addActionListener(e -> onRemove());
+        buttonPanel.add(addBtn);
+        buttonPanel.add(Box.createVerticalStrut(8));
+        buttonPanel.add(removeBtn);
+        buttonPanel.add(Box.createVerticalGlue());
+        center.add(buttonPanel);
+
+        // RIGHT: Linked list
+        JPanel linkedPanel = new JPanel(new BorderLayout());
+        linkedPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        linkedListLabel = new JLabel("Currently Linked (0)");
+        linkedListLabel.setBorder(BorderFactory.createEmptyBorder(2, 4, 4, 4));
+        linkedPanel.add(linkedListLabel, BorderLayout.NORTH);
+        linkedListModel = new LinkedListModel();
+        linkedListModel.refresh();
+        linkedList = new JList(linkedListModel);
+        linkedList.setSelectionMode(
+                ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        JScrollPane linkedScroll = new JScrollPane(linkedList);
+        linkedScroll.setPreferredSize(new Dimension(320, 380));
+        linkedPanel.add(linkedScroll, BorderLayout.CENTER);
+        center.add(linkedPanel);
+
+        return center;
+    }
+
+    private JPanel buildClosePanel() {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
+        p.add(Box.createHorizontalGlue());
+        JButton close = new JButton("Close");
+        close.addActionListener(e -> dispose());
+        p.add(close);
+        p.add(Box.createHorizontalStrut(8));
+        return p;
     }
 
     private JTree buildTree() {
@@ -66,12 +140,14 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
         JTree t = new DisplayTextTree();
         t.setModel(new DefaultTreeModel(root));
         t.setCellRenderer(new UMLTreeCellRenderer());
-        t.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+        t.getSelectionModel().setSelectionMode(
+                TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
         return t;
     }
 
     private DefaultMutableTreeNode buildNamespaceNode(Object ns, Project project) {
-        DefaultMutableTreeNode node = new DefaultMutableTreeNode(new NamespaceNode(ns));
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode(
+                new NamespaceNode(ns));
         Facade facade = Model.getFacade();
         try {
             Collection subs = facade.getOwnedElements(ns);
@@ -95,46 +171,36 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
         return node;
     }
 
-    private JPanel buildButtonPanel() {
-        JPanel p = new JPanel();
-        p.setLayout(new BoxLayout(p, BoxLayout.X_AXIS));
-        JButton add = new JButton("Add");
-        JButton remove = new JButton("Remove");
-        JButton close = new JButton("Close");
-        add.addActionListener(e -> onAdd());
-        remove.addActionListener(e -> onRemove());
-        close.addActionListener(e -> dispose());
-        p.add(add);
-        p.add(remove);
-        p.add(close);
-        return p;
-    }
-
     private void onAdd() {
         List<String> toAdd = collectSelectedDiagramUuids();
         if (toAdd.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please select diagrams in the tree.");
+            JOptionPane.showMessageDialog(this,
+                    "Please select diagrams in the tree.");
             return;
         }
         int n = 0;
         for (String uuid : toAdd) {
             if (UseCaseOperations.addRepresentedDiagram(useCase, uuid)) n++;
         }
+        linkedListModel.refresh();
         JOptionPane.showMessageDialog(this, "Added " + n + " diagram(s).");
     }
 
     private void onRemove() {
-        TreePath[] sel = tree.getSelectionPaths();
-        if (sel == null) return;
+        Object[] sel = linkedList.getSelectedValues();
+        if (sel == null || sel.length == 0) return;
         int n = 0;
-        for (TreePath p : sel) {
-            Object o = ((DefaultMutableTreeNode) p.getLastPathComponent()).getUserObject();
-            if (o instanceof DiagramNode) {
-                String uuid = ((DiagramNode) o).uuid;
+        for (Object o : sel) {
+            if (o instanceof LinkedItem) {
+                String uuid = ((LinkedItem) o).uuid;
                 if (UseCaseOperations.removeRepresentedDiagram(useCase, uuid)) n++;
             }
         }
-        if (n > 0) JOptionPane.showMessageDialog(this, "Removed " + n + " diagram(s).");
+        if (n > 0) {
+            linkedListModel.refresh();
+            JOptionPane.showMessageDialog(this,
+                    "Removed " + n + " diagram(s).");
+        }
     }
 
     private List<String> collectSelectedDiagramUuids() {
@@ -142,10 +208,90 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
         TreePath[] sel = tree.getSelectionPaths();
         if (sel == null) return out;
         for (TreePath p : sel) {
-            Object o = ((DefaultMutableTreeNode) p.getLastPathComponent()).getUserObject();
-            if (o instanceof DiagramNode) out.add(((DiagramNode) o).uuid);
+            Object o = ((DefaultMutableTreeNode) p.getLastPathComponent())
+                    .getUserObject();
+            if (o instanceof DiagramNode) {
+                out.add(((DiagramNode) o).uuid);
+            }
         }
         return out;
+    }
+
+    private ArgoDiagram lookupDiagram(Project project, String uuid, Facade facade) {
+        if (project == null) return null;
+        for (Object d : project.getDiagramList()) {
+            if (!(d instanceof ArgoDiagram)) continue;
+            ArgoDiagram ad = (ArgoDiagram) d;
+            if (uuid.equals(ad.getName())) return ad;
+            try {
+                Object ns = ad.getNamespace();
+                if (ns != null && uuid.equals(facade.getUUID(ns))) return ad;
+            } catch (RuntimeException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private String pathOf(ArgoDiagram ad) {
+        Object ns = ad.getNamespace();
+        if (ns == null) return "";
+        StringBuilder sb = new StringBuilder("/");
+        Object current = ns;
+        while (current != null) {
+            String n = (String) Model.getFacade().getName(current);
+            if (n == null) break;
+            sb.insert(1, n);
+            current = Model.getFacade().getNamespace(current);
+            if (current != null) sb.insert(1, "/");
+        }
+        return sb.toString();
+    }
+
+    private final class LinkedListModel extends AbstractListModel {
+        private final List<LinkedItem> items = new ArrayList<LinkedItem>();
+
+        void refresh() {
+            items.clear();
+            List<String> uuids =
+                    UseCaseOperations.getRepresentedDiagrams(useCase);
+            Project project =
+                    ProjectManager.getManager().getCurrentProject();
+            Facade facade = Model.getFacade();
+            for (String uuid : uuids) {
+                ArgoDiagram ad = lookupDiagram(project, uuid, facade);
+                items.add(new LinkedItem(ad, uuid));
+            }
+            fireContentsChanged(this, 0, items.size());
+            if (linkedListLabel != null) {
+                linkedListLabel.setText(
+                        "Currently Linked (" + items.size() + ")");
+            }
+        }
+
+        @Override public int getSize() { return items.size(); }
+        @Override public Object getElementAt(int i) {
+            return items.get(i);
+        }
+    }
+
+    private final class LinkedItem {
+        final ArgoDiagram diagram;
+        final String uuid;
+
+        LinkedItem(ArgoDiagram d, String u) {
+            this.diagram = d;
+            this.uuid = u;
+        }
+
+        @Override public String toString() {
+            if (diagram == null) {
+                return "(missing)  " + uuid;
+            }
+            String name = diagram.getName() == null
+                    ? "(unnamed)" : diagram.getName();
+            String type = "[" + diagram.getClass().getSimpleName() + "]";
+            return name + "  " + type + "  -  " + pathOf(diagram);
+        }
     }
 
     private static final class NamespaceNode {
