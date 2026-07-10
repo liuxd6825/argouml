@@ -181,11 +181,38 @@ public class FigUseCase extends FigCompartmentBox {
         // and stereotypeFig, not this one. Mirrors the pattern used
         // by FigStereotype.
         linkIndicatorFig = new FigSingleLineText(
-                new Rectangle(0, 0, 12, 12),
+                new Rectangle(0, 0, 16, 16),
                 getSettings(), false) {
             @Override
             public void setLineWidth(int w) {
                 super.setLineWidth(0);
+            }
+
+            @Override
+            public void paint(java.awt.Graphics g) {
+                // Sub-pixel-accurate centering via FontMetrics, bypassing
+                // the GEF CENTER formula's integer-truncation bug. Also
+                // zero the 1-px margins that ArgoFigText's constructor
+                // forces (line 99-102 of ArgoFigText.java), which together
+                // with 12-px box caused the visible right-shift of the
+                // glyph. Box is 16-px wide to give the ∞ glyph's left
+                // bearing room.
+                setLeftMargin(0);
+                setRightMargin(0);
+                setTopMargin(0);
+                setBotMargin(0);
+
+                java.awt.FontMetrics fm = getFontMetrics();
+                java.awt.Rectangle b = getBounds();
+                int textW = fm.stringWidth("\u221e");
+                int drawX = Math.round(
+                        b.x + (b.width  - textW) / 2.0f);
+                int drawY = b.y + Math.round(
+                        b.height / 2.0f
+                        + (fm.getAscent() - fm.getDescent()) / 2.0f);
+                g.setColor(getTextColor());
+                g.setFont(getFont());
+                g.drawString("\u221e", drawX, drawY);
             }
         };
         linkIndicatorFig.setText("\u221e");
@@ -359,7 +386,7 @@ public class FigUseCase extends FigCompartmentBox {
                         bounds.x, bounds.y, bounds.width, bounds.height);
                 int indicatorY = box.y - 14;
 
-                linkIndicatorFig.setLocation(centerX - 6, indicatorY);
+                linkIndicatorFig.setLocation(centerX - 8, indicatorY);
             }
         }
         damage();
