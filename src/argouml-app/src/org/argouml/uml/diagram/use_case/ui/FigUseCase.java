@@ -398,7 +398,9 @@ public class FigUseCase extends FigCompartmentBox {
                         bounds.x, bounds.y, bounds.width, bounds.height);
                 int indicatorY = box.y - 14;
 
-                linkIndicatorFig.setLocation(centerX - 8, indicatorY);
+                int indicatorW = linkIndicatorFig.getBounds().width;
+                linkIndicatorFig.setLocation(
+                        centerX - indicatorW / 2, indicatorY);
             }
         }
         damage();
