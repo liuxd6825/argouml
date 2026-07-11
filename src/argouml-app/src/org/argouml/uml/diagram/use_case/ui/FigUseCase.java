@@ -45,6 +45,7 @@ import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.beans.PropertyVetoException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -64,11 +65,13 @@ import org.argouml.uml.diagram.ui.ActionCompartmentDisplay;
 import org.argouml.uml.diagram.ui.FigCompartment;
 import org.argouml.uml.diagram.ui.FigCompartmentBox;
 import org.argouml.uml.diagram.ui.FigExtensionPointsCompartment;
+import org.argouml.uml.diagram.ui.FigMultiLineNameWithAbstractAndBold;
 import org.argouml.uml.diagram.ui.FigSingleLineText;
 import org.argouml.uml.ui.ActionNavigateRepresentedDiagram;
 import org.tigris.gef.base.Selection;
 import org.tigris.gef.presentation.Fig;
 import org.tigris.gef.presentation.FigCircle;
+import org.tigris.gef.presentation.FigText;
 
 /**
  * A fig to display use cases on use case diagrams.<p>
@@ -264,6 +267,19 @@ public class FigUseCase extends FigCompartmentBox {
         b.setLineColor(LINE_COLOR);
         b.setLineWidth(LINE_WIDTH);
         return b;
+    }
+
+    /**
+     * Use a multi-line name fig so users can enter names containing
+     * hard line breaks (Enter) and so GEF word-wraps long single lines
+     * at the ellipse's interior width. See
+     * {@link FigMultiLineNameWithAbstractAndBold}.
+     */
+    @Override
+    protected FigText createNameFig() {
+        return new FigMultiLineNameWithAbstractAndBold(getOwner(),
+                new Rectangle(X0, Y0, WIDTH, NAME_FIG_HEIGHT),
+                getSettings(), true);
     }
 
     /**
@@ -516,6 +532,35 @@ public class FigUseCase extends FigCompartmentBox {
             final int w, final int h) {
         super.setStandardBounds(x, y, w, h);
         updateLinkIndicator();
+    }
+
+    /**
+     * When the in-place name editor finishes, the user may have
+     * added hard line breaks (Enter) that grew {@code nameFig}'s
+     * internal {@code _h} via {@code FigText.calcBounds()}, but the
+     * enclosing ellipse is sized by
+     * {@link FigCompartmentBox#setStandardBounds} which only
+     * re-runs on {@code setBounds} calls. {@code FigTextEditor} does
+     * NOT trigger {@code setStandardBounds} on its parent. We do it
+     * here so the ellipse re-sizes around the new multi-line name,
+     * otherwise {@code paint()} is clipped to the OLD single-line
+     * layout and only the first line renders.
+     *
+     * <p>See design doc 2026-07-11-usecase-multiline-name-design.md
+     * §"Bug fix 2" and AGENTS.md "Adding custom Fig decorations" for
+     * the underlying paint-clipping analysis.</p>
+     */
+    @Override
+    protected void textEdited(org.tigris.gef.presentation.FigText ft)
+            throws PropertyVetoException {
+        super.textEdited(ft);
+        if (ft == getNameFig()) {
+            // Re-layout: setStandardBounds will read the new
+            // (multi-line aware) getMinimumSize() from
+            // FigMultiLineNameWithAbstractAndBold and resize the ellipse.
+            setBounds(getBounds());
+            updateLinkIndicator();
+        }
     }
 
     /**

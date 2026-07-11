@@ -403,8 +403,7 @@ public abstract class FigNodeModelElement
         // this rectangle marks the whole modelelement figure; everything
         // is inside it:
         bigPort = createBigPortFig();
-        nameFig = new FigNameWithAbstractAndBold(element,
-                new Rectangle(X0, Y0, WIDTH, NAME_FIG_HEIGHT), getSettings(), true);
+        nameFig = createNameFig();
         stereotypeFig = createStereotypeFig();
         constructFigs();
 
@@ -581,6 +580,20 @@ public abstract class FigNodeModelElement
         if (nameFig != null) {
             updateFont();
         }
+    }
+
+    /**
+     * Factory for the name fig. Subclasses may override to return a
+     * different FigText subclass (e.g. a multi-line variant for use-case
+     * diagrams). Called from the constructor before {@link #constructFigs()}
+     * runs, so {@link #getOwner()} already returns the model element.
+     *
+     * @return the name Fig
+     */
+    protected FigText createNameFig() {
+        return new FigNameWithAbstractAndBold(getOwner(),
+                new Rectangle(X0, Y0, WIDTH, NAME_FIG_HEIGHT),
+                getSettings(), true);
     }
 
     /**

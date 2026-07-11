@@ -12,8 +12,9 @@ likely miss.
   - `mvn -pl src/argouml-build -am package`
   - Output: `src/argouml-build/target/argouml.jar` (fat jar with deps).
   - Run: `java -jar src/argouml-build/target/argouml.jar`
-- **Project status**: near-dormant. Last commit Aug 2022. No CI files in repo
-  (Jenkinsfile was removed in commit `abda2c4647`).
+- **Project status**: near-dormant baseline + active multi-diagram linking work
+  (commits 2026-07-08 through 2026-07-11 on `argouml-ai`, `FigUseCase` ∞ indicator, 1:N link
+  dialog). No CI files in repo (Jenkinsfile was removed in commit `abda2c4647`).
 
 ## Things that will trip you up
 
@@ -517,7 +518,7 @@ mvn -pl src/argouml-app test -Dtest=TestProject
 | Add a DataType to the UML 1.4 Standard profile | append `<UML:DataType>` to `default-uml14.xmi` (XMI 1.2, see "Adding data types to UML 1.4 profile" below) |
 | Add a custom Swing field to a property panel | (1) create the JPanel class with a public `setTarget(Object)` method, (2) edit `model/metamodel.xml` (UML 1.4) and/or `model/metamodel2.xml` (UML 2.x) — **NOT** `meta/panels.xml` (it is not loaded) — to add `<custom-component name="..." class="...ClassName" />` inside the relevant `<panel>`. The XML loader (`MetaDataCache.java:147-168`) auto-recognizes any tag inside a panel via `getElementsByTagName("*")`, and `SwingUIFactory.createControl()` (`SwingUIFactory.java:127-148`) handles the `custom-component` branch via `Class.forName(name).getConstructor().newInstance()` + reflection on `setTarget(Object)` |
 | Add a right-click menu entry to a model element | (1) `extends AbstractActionNavigate` — handles TargetListener / enable-disable plumbing automatically; override `navigateTo(Object)` returning the navigation target or null; (2) implement `ContextActionFactory` (in `org.argouml.ui`) that returns `List<Action>` from `createContextPopupActions(Object)` (return empty list when inapplicable — the menu item then only appears when navigation is possible); (3) register the factory in the relevant `InitXxxDiagram.init()` via `ContextActionFactoryManager.addContextPopupFactory(...)`. The factory is invoked by **both** `FigNodeModelElement.getPopUpActions` (`src/argouml-app/src/org/argouml/uml/diagram/ui/FigNodeModelElement.java:614-630`) — figure popup — and `ExplorerPopup.initMenuCreateModuleActions` (`src/argouml-app/src/org/argouml/ui/explorer/ExplorerPopup.java:479-481`) — Navigator tree popup. Single registration, two locations. Add the i18n key `menu.popup.<your-key>` to `src/argouml-app/src/org/argouml/i18n/menu.properties` and pass it to `super(...)` in the action's constructor |
-| Support 1:N element-to-diagram linking | (1) Bump shared cache (`RepresentedDiagramLinkCache`) value from `String` to `List<String>`; add `addUuid` / `removeUuid` / `getAll`. (2) Add `setRepresentedDiagrams` / `add` / `remove` / `getRepresentedDiagrams` to `UseCaseOperations` writing the same `representedDiagram` tag with `dataValues: String[]`. (3) Update `UseCaseContextPopupFactory` to return a dynamic `ActionList("menu.popup.related-diagrams")` containing `ActionManageRepresentedDiagrams` + one `ActionJumpToRepresentedDiagram` per linked diagram. (4) Browse dialog `UseCaseManageRepresentedDiagramsDialog`: reuse `DisplayTextTree` + `UMLTreeCellRenderer`; populate by walking `Project.getUserDefinedModelList()` and `Model.getFacade().getOwnedElements(ns)` filtered by `isAPackage(...)`. (5) Fig decoration: add a `FigSingleLineText("\u221e")` child in `FigUseCase.initialize()` after `addFig(getStereotypeFig())`, toggle visibility via `updateListeners` (not `setTarget` — doesn't exist on FigNodeModelElement). (6) REST: `PUT /d/{d}/usecasediagram/usecases/by-name/{u}/representedDiagrams` (replace-all) + `POST .../representedDiagram` (add-one) + `DELETE .../representedDiagram/{uuid}` (remove-one) + `GET .../{uuid}/representedDiagrams` (list-all). (7) The legacy `setRepresentedDiagram(String)` / `getRepresentedDiagram()` MUST delegate to the new 1:N API to avoid dual-API cache divergence. (8) Wire-format `UsecaseUseCaseEntity` JSON changed from `representedDiagramUuid:"..."` to `representedDiagramUuids:[...]` — any external client depending on the old shape must update |
+| Support 1:N element-to-diagram linking | Storage layer is `RepresentedDiagramLinkCache` (`Map<Object, List<String>>`) in `argouml-core-model`; `UseCaseOperations` writes/reads the same `representedDiagram` tag with `dataValues: String[]` (cache is authoritative because MDR `setType(String)` throws). Right-click menu = `ContextActionFactory` returning an `ActionList` (NOT `ArgoJMenu` — `FigNodeModelElement.getPopUpActions` iterates as `Action`, would ClassCast). Browse dialog = `UseCaseManageRepresentedDiagramsDialog` reusing `DisplayTextTree` + `UMLTreeCellRenderer`, walking `Project.getUserDefinedModelList()` and `Model.getFacade().getOwnedElements(ns)` filtered by `isAPackage(...)`. REST: `PUT/POST/DELETE/GET /d/{d}/usecasediagram/usecases/.../representedDiagram[s]` (4 endpoints). Legacy `setRepresentedDiagram(String)` / `getRepresentedDiagram()` MUST delegate to the 1:N API to avoid dual-API cache divergence. Wire-format `UsecaseUseCaseEntity` JSON changed from `representedDiagramUuid:"..."` to `representedDiagramUuids:[...]`. For the Fig decoration (∞), see "Adding custom Fig decorations" below. |
 
 ### Adding data types to the UML 1.4 "Standard Elements" profile
 
@@ -588,9 +589,67 @@ edit that method (still resolved by name string — just rename `"Integer"`).
   only when the AndroMDA jar is dropped into `ext/`; not in the default
   profile set.
 
+## Adding custom Fig decorations (hard-earned lessons from the ∞ symbol work)
+
+When a Fig needs a small non-compartmental decoration child (a small icon, badge, or status indicator) that sits **outside** the parent's main figure, several GEF/ArgoUML internals conspire against you. The work-around pattern (verified on `FigUseCase` adding a `∞` indicator for "has represented-diagram links"):
+
+1. **Use an anonymous `FigSingleLineText` subclass with `paint(Graphics)` override** for pixel-accurate centering. `FontMetrics.stringWidth("∞")` returns the **advance width** (cursor movement), which differs from the visible ink rectangle by the font's left/right bearings — so advance-based centering looks right-shifted by ~0.5-1 px in Aqua LAF (Lucida Grande 13pt). The only way to truly center the visible ink is:
+
+   ```java
+   Font font = getFont();
+   Rectangle b = getBounds();
+   String text = "\u221e";
+   Graphics2D g2 = (Graphics2D) g;
+   GlyphVector gv = font.createGlyphVector(
+           g2.getFontRenderContext(), text.toCharArray());
+   Rectangle2D visual = gv.getVisualBounds();   // visual ink bounds
+   int drawX = (int) Math.round(
+           b.x + b.width / 2.0
+                   - visual.getWidth() / 2.0
+                   - visual.getX());
+   int drawY = (int) Math.round(
+           b.y + b.height / 2.0
+                   - visual.getY() - visual.getHeight() / 2.0);
+   g.setColor(getTextColor());
+   g.setFont(font);
+   g.drawString(text, drawX, drawY);
+   ```
+
+2. **FigText grows to `MIN_TEXT_WIDTH = 30` (GEF hardcoded in `org.tigris.gef.presentation.FigText`) regardless of the constructor's `Rectangle` arg**, because `FigText.calcBounds()` does `maxLineWidth = Math.max(maxLineWidth, MIN_TEXT_WIDTH)`. So **do not hardcode `setLocation(x - 8, ...)`** for a "16-px-wide" indicator — the box is actually 30+ px wide. Use `linkIndicatorFig.getBounds().width / 2` so centering survives font / text-length / future L&F changes.
+
+3. **`ArgoFigText` constructor hardcodes 1-px `setTopMargin/BotMargin/LeftMargin/RightMargin`** (`src/argouml-app/src/org/argouml/uml/diagram/ui/ArgoFigText.java:99-102`). These can NOT be set before the FigText is constructed. Override `paint(Graphics)` in your anonymous subclass to reset them to 0 at draw time:
+
+   ```java
+   @Override public void paint(Graphics g) {
+       setLeftMargin(0); setRightMargin(0);
+       setTopMargin(0);  setBotMargin(0);
+       // ... draw glyph ...
+   }
+   ```
+
+4. **Override `setLineWidth(int)` in your anonymous subclass** to immunize the decoration against parent `FigNodeModelElement.setLineWidth` propagation. The parent's `setStandardBounds` calls `super.setLineWidth(LINE_WIDTH=1)` which traverses children and re-asserts `1` on the decoration — defeating your initial `setLineWidth(0)`. `setLineWidth(0)` on the child is the only fix. Pattern used by `FigStereotype` (`src/argouml-app/src/org/argouml/uml/diagram/ui/FigStereotype.java:91-93`).
+
+5. **Override `getSubFigBounds(Fig)`** so the decoration's bounds are **excluded** from `FigGroup.calcBounds()`'s parent-bounds union. The decoration sits outside the ellipse (e.g. above the text), and the union would otherwise extend `_x/_y/_w/_h` of the parent Fig, corrupting the resize-drag handler on the next drag event. Return the parent's "real" bounds (e.g. `getBigPort().getBounds()`) for the decoration:
+
+   ```java
+   @Override
+   protected Rectangle getSubFigBounds(Fig subFig) {
+       if (subFig == linkIndicatorFig) {
+           return getBigPort().getBounds();
+       }
+       return super.getSubFigBounds(subFig);
+   }
+   ```
+
+6. **For position updates on resize**, override `setStandardBounds(int, int, int, int)` in the parent Fig to call a private `updateLinkIndicator()` after `super.setStandardBounds(...)`. Don't rely on the GEF resize flow to reposition the decoration — it doesn't know about it. Pattern used by `FigActor` (`src/argouml-app/src/org/argouml/uml/diagram/use_case/ui/FigActor.java:218-259`).
+
+7. **For visibility toggle**, hook into `updateListeners(oldOwner, newOwner)` and call `updateLinkIndicator()` at the end — this fires both on model events and on initial construction via `addElementListener` → `updateListeners(null, owner)`.
+
+8. **If testing with IntelliJ-launched run-configs**, note that the IDE reads `target/classes` (incremental compile output), not the fat jar. After `mvn install`, the IDE does **not** auto-reload class files — trigger it via *Build → Recompile 'argouml-app'* or save a touched file. Otherwise tests will keep using stale bytecode.
+
 ## Git workflow
 
-**Do not create commits, issues, or branches** in this repo when working as an agent. Edit files in place only. The user manages the git history.
+**Do not create commits, issues, or branches** in this repo when working as an agent. Edit files in place only. The user manages the git history. Plan-mode output, build-mode edits, and design docs under `docs/plans/` stay on disk uncommitted until the user reviews and commits.
 
 ## Stale launch files (log4j references)
 

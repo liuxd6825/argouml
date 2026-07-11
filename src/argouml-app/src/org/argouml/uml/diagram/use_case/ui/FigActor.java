@@ -46,6 +46,7 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
+import java.beans.PropertyVetoException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -53,12 +54,14 @@ import java.util.Vector;
 import org.argouml.model.Model;
 import org.argouml.uml.diagram.DiagramSettings;
 import org.argouml.uml.diagram.ui.ArgoFigUtil;
+import org.argouml.uml.diagram.ui.FigMultiLineNameWithAbstractAndBold;
 import org.argouml.uml.diagram.ui.FigNodeModelElement;
 import org.tigris.gef.base.Selection;
 import org.tigris.gef.presentation.Fig;
 import org.tigris.gef.presentation.FigCircle;
 import org.tigris.gef.presentation.FigLine;
 import org.tigris.gef.presentation.FigRect;
+import org.tigris.gef.presentation.FigText;
 
 /**
  * Class to display graphics for an Actor in a diagram. <p>
@@ -145,6 +148,23 @@ public class FigActor extends FigNodeModelElement {
     }
 
     /**
+     * Use a multi-line name fig so users can enter actor names containing
+     * hard line breaks (Enter) and so GEF word-wraps long single lines.
+     * See {@link FigMultiLineNameWithAbstractAndBold}.
+     *
+     * <p>{@link #setStandardBounds} already uses
+     * {@code getNameFig().getMinimumSize()} to lay out the name below the
+     * stick-man, so word-wrapped / multi-line names will automatically
+     * stretch the overall fig downward via {@link #getMinimumSize()}.</p>
+     */
+    @Override
+    protected FigText createNameFig() {
+        return new FigMultiLineNameWithAbstractAndBold(getOwner(),
+                new Rectangle(X0, Y0, WIDTH, NAME_FIG_HEIGHT),
+                getSettings(), true);
+    }
+
+    /**
      * Construct a new Actor with the given owner, bounds, and settings.  This
      * constructor is used by the PGML parser.
      * 
@@ -215,11 +235,11 @@ public class FigActor extends FigNodeModelElement {
     }
 
     @Override
-    protected void setStandardBounds(final int x, final int y, 
+    protected void setStandardBounds(final int x, final int y,
             final int w, final int h) {
 
         Rectangle oldBounds = getBounds();
-        
+
         // Make sure we don't try to set things smaller than the minimum
         Dimension minimumSize = getMinimumSize();
         int newW = Math.max(w, minimumSize.width);
@@ -238,16 +258,16 @@ public class FigActor extends FigNodeModelElement {
 
         Dimension minTextSize = getNameFig().getMinimumSize();
         getNameFig().setBounds(middle - minTextSize.width / 2,
-	        y +  55,
-	        minTextSize.width,
-	        minTextSize.height);
+                y +  55,
+                minTextSize.width,
+                minTextSize.height);
 
         if (getStereotypeFig().isVisible()) {
             Dimension minStereoSize = getStereotypeFig().getMinimumSize();
             assert minStereoSize.width <= newW;
             getStereotypeFig().setBounds(middle - minStereoSize.width / 2,
                     y + 55 + getNameFig().getHeight(),
-                    minStereoSize.width, 
+                    minStereoSize.width,
                     minStereoSize.height);
         }
 
@@ -256,6 +276,29 @@ public class FigActor extends FigNodeModelElement {
         calcBounds(); //Accumulate a bounding box for all the Figs in the group.
         firePropChange("bounds", oldBounds, getBounds());
         updateEdges();
+    }
+
+    /**
+     * When the in-place name editor finishes, the user may have added
+     * hard line breaks (Enter) that grew {@code nameFig}'s internal
+     * {@code _h} via {@code FigText.calcBounds()}. The above
+     * {@code setStandardBounds} uses
+     * {@code getNameFig().getMinimumSize()} which is multi-line aware
+     * thanks to {@link FigMultiLineNameWithAbstractAndBold}, so simply
+     * re-triggering layout via {@code setBounds(getBounds())} is enough
+     * to grow the fig downward to fit the new name.
+     *
+     * <p>{@code getMinimumSize()} itself also reads the same
+     * multi-line aware minimum, so the fig's overall minimum height
+     * (and therefore {@code newH}) accommodates the multi-line text.</p>
+     */
+    @Override
+    protected void textEdited(org.tigris.gef.presentation.FigText ft)
+            throws PropertyVetoException {
+        super.textEdited(ft);
+        if (ft == getNameFig()) {
+            setBounds(getBounds());
+        }
     }
 
     @Override

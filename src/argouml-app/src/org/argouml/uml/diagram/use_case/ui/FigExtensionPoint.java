@@ -43,6 +43,7 @@ import java.awt.Rectangle;
 import org.argouml.notation.NotationProviderFactory2;
 import org.argouml.uml.diagram.DiagramSettings;
 import org.argouml.uml.diagram.ui.CompartmentFigText;
+import org.tigris.gef.presentation.FigText;
 
 /**
  * Fig to show one extension point in a compartment.
@@ -59,12 +60,23 @@ public class FigExtensionPoint extends CompartmentFigText {
     public FigExtensionPoint(Object owner, Rectangle bounds,
             DiagramSettings settings) {
         super(owner, bounds, settings);
-
+        // Enable multi-line editing for extension-point names.
+        //   setReturnAction(INSERT) -> FigTextEditor treats Enter as a
+        //     newline insertion rather than ending editing.
+        //   setLineSeparator("\n") -> normalise line terminator to LF.
+        //   setWordWrap(true)      -> auto-insert \r soft breaks at the
+        //     current width; paint() renders them, getText() strips them.
+        // We do this here rather than in CompartmentFigText so we don't
+        // change behaviour for FigAttribute / FigOperation (the other
+        // CompartmentFigText subclasses in static_structure.ui).
+        setReturnAction(FigText.INSERT);
+        setLineSeparator("\n");
+        setWordWrap(true);
     }
-    
+
     @Override
     protected int getNotationProviderType() {
         return NotationProviderFactory2.TYPE_EXTENSION_POINT;
     }
-    
+
 }
