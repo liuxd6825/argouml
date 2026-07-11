@@ -190,29 +190,41 @@ public class FigUseCase extends FigCompartmentBox {
 
             @Override
             public void paint(java.awt.Graphics g) {
-                // Sub-pixel-accurate centering via FontMetrics, bypassing
-                // the GEF CENTER formula's integer-truncation bug. Also
-                // zero the 1-px margins that ArgoFigText's constructor
-                // forces (line 99-102 of ArgoFigText.java), which together
-                // with 12-px box caused the visible right-shift of the
-                // glyph. Box is 16-px wide to give the ∞ glyph's left
-                // bearing room.
+                // Pixel-accurate centering via GlyphVector visual
+                // bounds. FontMetrics.stringWidth returns the advance
+                // width (the cursor movement), which differs from the
+                // visible ink bounds by the font's left/right
+                // bearings. In Aqua LAF (Lucida Grande 13pt), ∞ has
+                // ~0.5-1 px of left bearing, so advance-based
+                // centering looks right-shifted.
+                // GlyphVector.getVisualBounds returns the actual ink
+                // rectangle and is the only way to truly center the
+                // visible glyph. Also zero the 1-px margins that
+                // ArgoFigText's constructor forces
+                // (ArgoFigText.java:99-102), and use a 16-px box to
+                // give the bearings room.
                 setLeftMargin(0);
                 setRightMargin(0);
                 setTopMargin(0);
                 setBotMargin(0);
 
-                java.awt.FontMetrics fm = getFontMetrics();
+                String text = "\u221e";
+                java.awt.Font font = getFont();
                 java.awt.Rectangle b = getBounds();
-                int textW = fm.stringWidth("\u221e");
-                int drawX = Math.round(
-                        b.x + (b.width  - textW) / 2.0f);
-                int drawY = b.y + Math.round(
-                        b.height / 2.0f
-                        + (fm.getAscent() - fm.getDescent()) / 2.0f);
+                java.awt.Graphics2D g2 = (java.awt.Graphics2D) g;
+                java.awt.font.GlyphVector gv = font.createGlyphVector(
+                        g2.getFontRenderContext(), text.toCharArray());
+                java.awt.geom.Rectangle2D visual = gv.getVisualBounds();
+                int drawX = (int) Math.round(
+                        b.x + b.width  / 2.0
+                                - visual.getWidth()  / 2.0
+                                - visual.getX());
+                int drawY = (int) Math.round(
+                        b.y + b.height / 2.0
+                                - visual.getY() - visual.getHeight() / 2.0);
                 g.setColor(getTextColor());
-                g.setFont(getFont());
-                g.drawString("\u221e", drawX, drawY);
+                g.setFont(font);
+                g.drawString(text, drawX, drawY);
             }
         };
         linkIndicatorFig.setText("\u221e");
