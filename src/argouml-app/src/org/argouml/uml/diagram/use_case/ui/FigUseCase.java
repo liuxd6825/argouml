@@ -66,6 +66,7 @@ import org.argouml.uml.diagram.ui.FigCompartment;
 import org.argouml.uml.diagram.ui.FigCompartmentBox;
 import org.argouml.uml.diagram.ui.FigExtensionPointsCompartment;
 import org.argouml.uml.diagram.ui.FigMultiLineNameWithAbstractAndBold;
+import org.argouml.uml.diagram.ui.FigUseCaseMultiLineNameWithAbstractAndBold;
 import org.argouml.uml.diagram.ui.FigSingleLineText;
 import org.argouml.uml.ui.ActionNavigateRepresentedDiagram;
 import org.tigris.gef.base.Selection;
@@ -270,14 +271,15 @@ public class FigUseCase extends FigCompartmentBox {
     }
 
     /**
-     * Use a multi-line name fig so users can enter names containing
-     * hard line breaks (Enter) and so GEF word-wraps long single lines
-     * at the ellipse's interior width. See
-     * {@link FigMultiLineNameWithAbstractAndBold}.
+     * Use the use-case-specific multi-line name fig whose
+     * {@code getMinimumSize()} decouples width from text length, so
+     * the enclosing ellipse can be mouse-resized to any width and
+     * the text wraps at the chosen width. See
+     * {@link FigUseCaseMultiLineNameWithAbstractAndBold}.
      */
     @Override
     protected FigText createNameFig() {
-        return new FigMultiLineNameWithAbstractAndBold(getOwner(),
+        return new FigUseCaseMultiLineNameWithAbstractAndBold(getOwner(),
                 new Rectangle(X0, Y0, WIDTH, NAME_FIG_HEIGHT),
                 getSettings(), true);
     }
@@ -492,19 +494,40 @@ public class FigUseCase extends FigCompartmentBox {
 			     ((int) (Math.ceil(b) + getLineWidth()) * 2));
     }
 
+    /**
+     * Position the inner text-compartment box for an ellipse.
+     *
+     * <ul>
+     * <li><b>Width</b>: full ellipse interior width ({@code w - 2 *
+     * lineWidth}) so {@code nameFig._w} follows the user's drag and
+     * GEF word-wrap inserts {@code \r} at that boundary.</li>
+     * <li><b>Height</b>: text-min height ({@code containerBox.height})
+     * so the inner block is no taller than it needs to be.</li>
+     * <li><b>Y</b>: vertically centred inside the ellipse
+     * ({@code (h - boxH) / 2}) so the text appears in the middle
+     * of the use case — matches the pre-v3 behaviour where the
+     * natural text size was centred.</li>
+     * </ul>
+     *
+     * <p>{@code containerBox} is set by
+     * {@link #addCompartmentBoxSurroundings(Dimension)} (called from
+     * {@code getMinimumSize()}) and reflects the natural minimum size
+     * that the name + any visible compartments need.</p>
+     */
     @Override
     protected Rectangle calculateCompartmentBoxDimensions(
             int x, int y, int w, int h) {
-        /* For an ellipse, we can put the box in the middle:  */
+        int boxW = w - 2 * getLineWidth();
+        int boxH = containerBox.height;
         return new Rectangle(
-                x + (w - containerBox.width) / 2, 
-                y + (h - containerBox.height) / 2, 
-                containerBox.width, 
-                containerBox.height);
+                x + getLineWidth(),
+                y + (h - boxH) / 2,
+                boxW,
+                boxH);
     }
 
     @Override
-    protected void setCompartmentBounds(FigCompartment c, 
+    protected void setCompartmentBounds(FigCompartment c,
             Rectangle cb, Rectangle ob) {
         Rectangle r = new Rectangle();
         r.y = cb.y;

@@ -48,6 +48,18 @@ import org.tigris.gef.presentation.FigText;
 /**
  * Fig to show one extension point in a compartment.
  *
+ * <p>Enables GEF soft word-wrap on the extension-point text so a long
+ * condition line wraps inside the compartment box. Hard line breaks
+ * (Enter inserting {@code \n}) are intentionally NOT enabled here:
+ * the parent {@link CompartmentFigText} (via {@code FigSingleLineText})
+ * already configured {@code setReturnAction(END_EDITING)}, so Enter
+ * exits the editor just like every other single-line UML element.</p>
+ *
+ * <p>Configured here rather than in {@code CompartmentFigText} so we
+ * don't change behaviour for the other {@code CompartmentFigText}
+ * subclasses ({@code FigAttribute}, {@code FigOperation}) used by
+ * class diagrams.</p>
+ *
  * @author michiel
  */
 public class FigExtensionPoint extends CompartmentFigText {
@@ -60,17 +72,9 @@ public class FigExtensionPoint extends CompartmentFigText {
     public FigExtensionPoint(Object owner, Rectangle bounds,
             DiagramSettings settings) {
         super(owner, bounds, settings);
-        // Enable multi-line editing for extension-point names.
-        //   setReturnAction(INSERT) -> FigTextEditor treats Enter as a
-        //     newline insertion rather than ending editing.
-        //   setLineSeparator("\n") -> normalise line terminator to LF.
-        //   setWordWrap(true)      -> auto-insert \r soft breaks at the
-        //     current width; paint() renders them, getText() strips them.
-        // We do this here rather than in CompartmentFigText so we don't
-        // change behaviour for FigAttribute / FigOperation (the other
-        // CompartmentFigText subclasses in static_structure.ui).
-        setReturnAction(FigText.INSERT);
-        setLineSeparator("\n");
+        //   setWordWrap(true) -> setBoundsImpl re-runs wordWrap() on width
+        //     changes, inserting \r soft breaks that paint() renders but
+        //     getText() filters out (model name stays single-line).
         setWordWrap(true);
     }
 

@@ -41,6 +41,7 @@ import org.argouml.model.Facade;
 import org.argouml.model.Model;
 import org.argouml.uml.diagram.ArgoDiagram;
 import org.argouml.uml.ui.UMLTreeCellRenderer;
+import org.argouml.util.ItemUID;
 
 public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
     private static final long serialVersionUID = 1L;
@@ -222,14 +223,14 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
         return out;
     }
 
-    private ArgoDiagram lookupDiagram(Project project, String uuid, Facade facade) {
-        if (project == null) return null;
+    private ArgoDiagram lookupDiagram(Project project, String uuid) {
+        if (project == null || uuid == null || uuid.isEmpty()) return null;
         for (Object d : project.getDiagramList()) {
             if (!(d instanceof ArgoDiagram)) continue;
             ArgoDiagram ad = (ArgoDiagram) d;
             try {
-                Object ns = ad.getNamespace();
-                if (ns != null && uuid.equals(facade.getUUID(ns))) return ad;
+                ItemUID uid = ad.getItemUID();
+                if (uid != null && uuid.equals(uid.toString())) return ad;
             } catch (RuntimeException ignored) {
             }
         }
@@ -260,9 +261,8 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
                     UseCaseOperations.getRepresentedDiagrams(useCase);
             Project project =
                     ProjectManager.getManager().getCurrentProject();
-            Facade facade = Model.getFacade();
             for (String uuid : uuids) {
-                ArgoDiagram ad = lookupDiagram(project, uuid, facade);
+                ArgoDiagram ad = lookupDiagram(project, uuid);
                 items.add(new LinkedItem(ad, uuid));
             }
             fireContentsChanged(this, 0, items.size());
@@ -306,22 +306,34 @@ public final class UseCaseManageRepresentedDiagramsDialog extends JDialog {
             return n == null ? "(namespace)" : n;
         }
     }
-
     private static final class DiagramNode {
         final ArgoDiagram diagram;
         final String uuid;
         DiagramNode(ArgoDiagram ad) {
             this.diagram = ad;
-            Object ns = ad.getNamespace();
+            // Use ItemUID (per-diagram stable UUID) instead of the
+            // namespace UUID — every ArgoDiagram in a project shares
+            // the same namespace, so namespace-based matching would
+            // return every diagram in the project. ItemUID is the
+            // ArgoUML-internal unique identifier already used by the
+            // persistence layer (UUID seeded by java.rmi.server.UID).
+            // ArgoDiagramImpl does not auto-assign ItemUID at
+            // construction, so generate one on demand to make the
+            // dialog usable for freshly created diagrams too.
             String u = "";
             try {
-                String t = (String) Model.getFacade().getUUID(ns);
-                if (t != null) u = t;
+                ItemUID uid = ad.getItemUID();
+                if (uid == null) {
+                    ad.setItemUID(new ItemUID());
+                    uid = ad.getItemUID();
+                }
+                if (uid != null) u = uid.toString();
             } catch (RuntimeException ignored) {
             }
             this.uuid = u;
         }
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return (diagram.getName() == null ? "(unnamed)" : diagram.getName())
                     + "  [" + diagram.getClass().getSimpleName() + "]";
         }
