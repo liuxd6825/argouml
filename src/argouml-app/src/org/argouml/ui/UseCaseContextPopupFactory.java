@@ -14,6 +14,7 @@ import java.util.List;
 
 import javax.swing.Action;
 
+import org.argouml.i18n.Translator;
 import org.argouml.kernel.ActionList;
 import org.argouml.model.Model;
 import org.argouml.uml.diagram.ArgoDiagram;
@@ -28,7 +29,14 @@ public final class UseCaseContextPopupFactory implements ContextActionFactory {
         if (context == null || !Model.getFacade().isAUseCase(context)) {
             return Collections.emptyList();
         }
-        ActionList menu = new ActionList("menu.popup.related-diagrams");
+        // Pass the *localized* submenu title, not the raw i18n key.
+        // org.argouml.kernel.ActionList stores its constructor String
+        // verbatim and does NOT look the key up, so an unlocalized key
+        // would show up in the right-click menu as "menu.popup.related-diagrams"
+        // even in the en_US locale. Localize here so all locales see the
+        // resolved label.
+        ActionList menu = new ActionList(
+                Translator.localize("menu.popup.related-diagrams"));
         menu.add(new ActionManageRepresentedDiagrams());
         List<ArgoDiagram> diagrams =
                 ActionNavigateRepresentedDiagram.lookupAllRepresentedDiagrams(context);

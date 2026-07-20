@@ -49,6 +49,7 @@ import java.util.logging.Logger;
 
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -98,7 +99,6 @@ import org.argouml.util.osdep.OSXAdapter;
 import org.argouml.util.osdep.OsUtil;
 import org.tigris.gef.base.AlignAction;
 import org.tigris.gef.base.DistributeAction;
-import org.tigris.gef.base.ReorderAction;
 import org.tigris.toolbar.ToolBarFactory;
 
 /**
@@ -597,6 +597,32 @@ public class GenericArgoMenuBar extends JMenuBar implements
         view.add(menuToolbars);
         view.addSeparator();
 
+        // "Window" submenu — toggles per-tab visibility of the EAST
+        // details pane.  Each CheckboxMenuItem's check-state reads
+        // from / writes to Configuration via TabVisibilityConfig,
+        // so the choice survives across sessions.  Live show/hide is
+        // driven by TabVisibilityRegistry inside the action.
+        JMenu menuWindow = (JMenu) view.add(new JMenu(menuLocalize("Window")));
+        setMnemonic(menuWindow, "Window");
+        for (String tabKey
+                : org.argouml.ui.TabVisibilityConfig.ALL_KEYS) {
+            ToggleTabVisibilityAction act =
+                    new ToggleTabVisibilityAction(tabKey);
+            act.putValue(javax.swing.Action.NAME,
+                    Translator.localize("tab." + tabKey));
+            JCheckBoxMenuItem item = new JCheckBoxMenuItem(act);
+            item.setSelected(act.isCurrentlyVisible());
+            // Keep the check-state in sync if the registry toggles the
+            // panel programmatically (e.g. when a future "reset to
+            // defaults" menu is added).  Cheap — fire only on change.
+            item.addChangeListener(e -> {
+                if (item.isSelected() != act.isCurrentlyVisible()) {
+                    item.setSelected(act.isCurrentlyVisible());
+                }
+            });
+            menuWindow.add(item);
+        }
+
         JMenuItem showSaved = view.add(new ActionShowXMLDump());
         setMnemonic(showSaved, "Show Saved");
         ShortcutMgr.assignAccelerator(showSaved,
@@ -826,41 +852,7 @@ public class GenericArgoMenuBar extends JMenuBar implements
      *            the main Reorder menu
      */
     private static void initReorderMenu(JMenu reorder) {
-        JMenuItem reorderBringForward = reorder.add(new ReorderAction(
-                Translator.localize("action.bring-forward"),
-                ResourceLoaderWrapper.lookupIcon("Forward"),
-                ReorderAction.BRING_FORWARD));
-        setMnemonic(reorderBringForward,
-                "reorder bring forward");
-        ShortcutMgr.assignAccelerator(reorderBringForward,
-                ShortcutMgr.ACTION_REORDER_FORWARD);
-
-        JMenuItem reorderSendBackward = reorder.add(new ReorderAction(
-                Translator.localize("action.send-backward"),
-                ResourceLoaderWrapper.lookupIcon("Backward"),
-                ReorderAction.SEND_BACKWARD));
-        setMnemonic(reorderSendBackward,
-                "reorder send backward");
-        ShortcutMgr.assignAccelerator(reorderSendBackward,
-                ShortcutMgr.ACTION_REORDER_BACKWARD);
-
-        JMenuItem reorderBringToFront = reorder.add(new ReorderAction(
-                Translator.localize("action.bring-to-front"),
-                ResourceLoaderWrapper.lookupIcon("ToFront"),
-                ReorderAction.BRING_TO_FRONT));
-        setMnemonic(reorderBringToFront,
-                "reorder bring to front");
-        ShortcutMgr.assignAccelerator(reorderBringToFront,
-                ShortcutMgr.ACTION_REORDER_TO_FRONT);
-
-        JMenuItem reorderSendToBack = reorder.add(new ReorderAction(
-                Translator.localize("action.send-to-back"),
-                ResourceLoaderWrapper.lookupIcon("ToBack"),
-                ReorderAction.SEND_TO_BACK));
-        setMnemonic(reorderSendToBack,
-                "reorder send to back");
-        ShortcutMgr.assignAccelerator(reorderSendToBack,
-                ShortcutMgr.ACTION_REORDER_TO_BACK);
+        org.argouml.uml.diagram.ui.ReorderMenuBuilder.populate(reorder);
     }
 
 

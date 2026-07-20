@@ -663,3 +663,159 @@ copying JVM args.
 
 **No `LICENSE` file is present in the repo root.** The project has historically
 been BSD-licensed; verify before redistribution.
+
+## i18n maintenance
+
+Compact reference for finding/fixing hardcoded strings. Full case studies in
+[`docs/i18n.md`](docs/i18n.md). Canonical reference for adding language packs:
+[`externals/argouml-i18n-zh/I18N_GUIDELINES.md`](externals/argouml-i18n-zh/I18N_GUIDELINES.md).
+
+### Bundle types (in `src/argouml-app/src/org/argouml/i18n/`)
+
+| File | Purpose |
+|---|---|
+| `action.properties` | Menu/button labels (verbs) |
+| `label.properties` | Form labels (`Name:`, `Type:`, …) |
+| `menu.properties` | Menu names (top-level + `menu.popup.*` for popup) |
+| `checkbox.properties` | Checkbox labels |
+| `button.properties` | Dialog buttons (`OK`, `Cancel`) |
+| `combobox.properties` | Combo-box options |
+| `critics.properties` | Critic messages |
+| `dialog.properties` | Dialog titles/fields |
+| `mnemonic.properties` | Keyboard shortcuts |
+| `optionpane.properties` | Message dialogs |
+| `radiogroup.properties` | Radio buttons |
+| `statusmsg.properties` | Status bar |
+| `tab.properties` | Tab titles |
+| `tooltip.properties` | Hover tooltips |
+| `misc.properties` | Catch-all (`untitled`, `unnamed`) |
+
+Per-class property files (e.g. `CrUmlMalformedName.properties`) mirror the
+package path of the class using them.
+
+### Key naming conventions
+
+- `action.<verb-noun>` — `action.bring-forward`, `action.set` (verb lowercase, noun sentence-case)
+- `label.<noun>` — `label.ordered`, `label.ordering` (trailing colon optional)
+- `menu.<top-level>` — `menu.arrange`, `menu.file` for menu bar
+- `menu.popup.<context>` — `menu.popup.modifiers`, `menu.popup.add-actor` for right-click
+- `checkbox.<property>` — `checkbox.abstract-uc`, `checkbox.static`
+- `menu.item.<context>.mnemonic` — single-char key for accelerator
+- `menu.<context>.mnemonic` — single-char key for top-level menu
+
+### zh_CN encoding rules (`externals/argouml-i18n-zh/src/org/argouml/i18n/`)
+
+- **UTF-8** file encoding (declared in POM)
+- Chinese characters use **native UTF-8** directly (e.g. `当`) — `\uXXXX` escapes are not used
+- **CRLF** line endings for files marked with "CRLF" in `file(1)` output; LF for others — preserve when editing
+- The runtime reads bundles via `Translator.UTF8_CONTROL` (a `ResourceBundle.Control` subclass that wraps a UTF-8 `InputStreamReader`)
+- See `TestBundleEncoding` for the test pattern
+- For legacy bundles still in `\uXXXX` form, run `scripts/decode-unicode-escapes.py <file>.properties` to convert them to native UTF-8
+- New contributors write native UTF-8 Chinese in any new bundle file
+
+### Hardcoded string detection checklist
+
+```bash
+# TODO: I18N comments
+grep -rn "// TODO: I18N\|TODO.*i18n\|TODO.*localize" src/
+
+# String-literal super() / first-arg constructor calls
+grep -rnE 'super\("[A-Z][a-zA-Z ]+"\)' src/argouml-app/src/
+
+# Hardcoded menu names (should use Translator.localize)
+grep -rnE 'new ArgoJMenu\("[A-Z]' src/
+
+# GEF/3rd-party classes with hardcoded English names
+# (CmdReorder.wordFor() returns "Forward"/"Backward"/"ToFront"/"ToBack" regardless of locale)
+
+# Compare en vs zh_CN bundle: missing translations
+diff <(grep -E "^[a-z]" src/argouml-app/src/org/argouml/i18n/X.properties | sort -u) \
+     <(grep -E "^[a-z]" externals/argouml-i18n-zh/src/org/argouml/i18n/X_zh_CN.properties | sort -u)
+```
+
+### Fix workflow
+
+1. **Find the string**: grep source for the English literal
+2. **Pick a key**: name it per conventions above (e.g. `action.set`, not `set_action`)
+3. **Add to en bundle**: append `key = English text` to `src/argouml-app/src/org/argouml/i18n/<bundle>.properties`
+4. **Replace literal with key**: change `super("Set")` → `super(Translator.localize("action.set"))`
+5. **Add zh_CN translation**: edit `externals/argouml-i18n-zh/src/org/argouml/i18n/<bundle>_zh_CN.properties`
+6. **Rebuild & deploy**: `cd externals/argouml-i18n-zh && mvn install -DskipTests -o && cp target/argouml-i18n-zh-*.jar /tmp/argouml-deps/`
+7. **Restart ArgoUML** (bundles are read once at startup)
+8. **Add regression test** extending `TestCase` with `byte[]` trick for zh assertions
+
+### Translator.localize vs GEF Localizer
+
+ArgoUML's `Translator.localize(key)` parses the key to derive the bundle name
+(leading prefix up to first `.`), then calls
+`ResourceBundle.getBundle("org.argouml.i18n.<bundle>", locale)`.
+
+GEF's `Fig.getPopUpActions()` (popup Ordering submenu) uses GEF's own
+`Localizer.localize("PresentationGef", "Ordering")` which is a **different
+mechanism** (alias-based, not bundle-prefix). The bundle alias ArgoUML registers
+(`Translator.java:145`) is `"GefPres"`, not `"PresentationGef"`, so GEF's lookup
+silently falls back to the literal key. **Fixing this requires either
+modifying GEF upstream or overriding `Fig.getPopUpActions` in ArgoUML** — see
+`docs/i18n.md §Limitations` for details.
+
+### Test pattern for i18n regressions
+
+```java
+// byte[] trick: avoids Java 9+ Unicode escape preprocessor
+byte[] expected = new byte[] {0x5c, 0x75, 0x35, 0x33, 0x66, 0x36, ...};  // \u53f6 = 叶
+String actual = Translator.localize("checkbox.final-uc", new Locale("zh", "CN"));
+assertEquals(new String(expected, "ISO-8859-1").trim(), actual.replaceAll("\r", "").trim());
+```
+
+See `src/argouml-app/tests/org/argouml/uml/diagram/ui/TestAssociationOrderingI18n.java`
+for the full pattern.
+
+### IntelliJ IDEA setup
+
+If you open `externals/argouml-i18n-zh/src/org/argouml/i18n/*_zh_*.properties`
+in IntelliJ IDEA and see **garbled Chinese characters**, IntelliJ is
+using its **"Default encoding for properties files"** preference
+(ISO-8859-1 by default — Java's pre-9 `ResourceBundle` default) instead
+of UTF-8. The files themselves are valid UTF-8; this is purely an IDE
+display issue.
+
+Two fixes (apply one or both):
+
+1. **Project-level (recommended)** — the repo's `.editorconfig` file
+   sets `charset = utf-8` for `*.properties`. IntelliJ's built-in
+   EditorConfig plugin (IntelliJ 2020.2+) reads this on file open and
+   overrides the default-properties-encoding preference. Older
+   IntelliJ versions: install the *EditorConfig* plugin
+   (`Settings → Plugins → Marketplace → EditorConfig`).
+
+2. **Per-IDE (one-time)** — open
+   *Settings → Editor → File Encodings*, then set:
+   - **Global Encoding**: `UTF-8`
+   - **Default encoding for properties files**: `UTF-8`
+   - **Default encoding for .properties (or **Transparent
+     native-to-ascii conversion**): `unchecked`
+
+3. **Per-file override** — if a file shows garbled after applying (1)
+   and (2), IntelliJ may have cached a per-file override. Right-click
+   the file in the editor → *File Encoding* → choose `UTF-8`. The
+   override is stored in `workspace.xml`.
+
+Verification: open `checkbox_zh_CN.properties` and confirm lines
+like `checkbox.abstract-uc = 抽象` render correctly. If you see
+`checkbox.abstract-uc = æ\u00b8¦å®\u0088\u00a8` or similar,
+encoding is wrong.
+
+Other editors (VSCode, Sublime, Eclipse) honor `.editorconfig`
+natively via built-in plugins; no extra setup needed.
+
+### Encoding-aware file conventions
+
+| File type | Encoding | Line ending | Source |
+|---|---|---|---|
+| Java `.java` | UTF-8 | LF (mostly), some CRLF in legacy files | `pom.xml` `<sourceEncoding>` |
+| `.properties` (en baseline) | UTF-8 | LF | Pure ASCII, no special handling needed |
+| `.properties` (`*_zh_*.properties`) | UTF-8 (native Chinese) | LF (zh_CN) / CRLF (zh_TW) | Vendored from upstream; mixed by origin |
+| Markdown `.md` | UTF-8 | LF | `.editorconfig` |
+| XML `.xml` | UTF-8 | LF | `.editorconfig` |
+| Windows scripts `.bat`, `.cmd` | UTF-8 | CRLF | `.editorconfig` |
+| Makefiles | UTF-8 | LF (with tab indent) | `.editorconfig` |

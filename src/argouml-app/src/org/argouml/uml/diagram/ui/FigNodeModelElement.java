@@ -623,7 +623,13 @@ public abstract class FigNodeModelElement
     public Vector getPopUpActions(MouseEvent me) {
         ActionList popUpActions =
             new ActionList(super.getPopUpActions(me), isReadOnly());
-        
+
+        // GEF 0.13.7 injects an un-translated "Ordering" JMenu populated
+        // with 4 CmdReorder.* singletons whose display names come from
+        // bytecode string constants. Strip that menu and append our
+        // localized ReorderMenuBuilder submenu. See docs/i18n.md §8.
+        ReorderMenuBuilder.replaceGefOrderingSubmenu(popUpActions);
+
         RelationshipActionFactory relationshipActions = new RelationshipActionFactory();
         
         final List<Action> actions = relationshipActions.createContextPopupActions(getOwner());

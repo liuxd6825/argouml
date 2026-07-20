@@ -181,7 +181,17 @@ class LabelledComponent extends JPanel implements MouseListener {
     
     public Dimension getPreferredSize() {
         if (component instanceof JComboBox) {
-            return null;
+            // Original code returned null here to work around JRE 5
+            // Bug 6255154, but a null return trips up LabelledLayout's
+            // getPreferredSize().getHeight() in JRE 9+.  Returning a
+            // proper Dimension lets the layout manager place the row
+            // correctly while still honouring the JComboBox's own
+            // preferred size.
+            Dimension inner = component.getPreferredSize();
+            if (inner != null) {
+                return new Dimension(inner.width, inner.height);
+            }
+            return new Dimension(0, 24);
         } else {
             return super.getPreferredSize();
         }

@@ -72,6 +72,75 @@ public final class Translator {
     private static final String BUNDLES_PATH = "org.argouml.i18n";
 
     /**
+     * ResourceBundle.Control that loads {@code .properties} files as UTF-8.
+     * <p>
+     * The default Control reads {@code .properties} files using ISO-8859-1
+     * for backward compatibility (Java 8 and earlier only supported
+     * ISO-8859-1 for {@code .properties}). Since Java 9 a UTF-8 Control is
+     * obtained by subclassing {@link ResourceBundle.Control} and overriding
+     * {@link ResourceBundle.Control#newBundle(String, Locale, String,
+     * ClassLoader, boolean)} to read bytes via a UTF-8 InputStreamReader.
+     * Legacy Unicode escapes (a backslash followed by {@code uXXXX}) are
+     * still decoded by {@link java.util.Properties#load} regardless of
+     * source encoding, so existing ISO-8859-1 + escape bundles continue to
+     * work untouched. New translations may use native characters directly.
+     */
+    private static final ResourceBundle.Control UTF8_CONTROL =
+        new ResourceBundle.Control() {
+            @Override
+            public ResourceBundle newBundle(String baseName, Locale locale,
+                                            String format, ClassLoader loader,
+                                            boolean reload)
+                    throws java.io.IOException,
+                           IllegalAccessException,
+                           InstantiationException {
+                if (!"java.properties".equals(format)) {
+                    return super.newBundle(baseName, locale, format,
+                                           loader, reload);
+                }
+                String bundleName = toBundleName(baseName, locale);
+                String resourceName = toResourceName(bundleName, "properties");
+                java.io.InputStream in;
+                try {
+                    if (reload) {
+                        java.net.URL url = loader.getResource(resourceName);
+                        if (url == null) {
+                            return null;
+                        }
+                        in = url.openStream();
+                    } else {
+                        in = loader.getResourceAsStream(resourceName);
+                    }
+                    if (in == null) {
+                        return null;
+                    }
+                } catch (java.io.IOException e) {
+                    return null;
+                }
+                try {
+                    java.io.InputStreamReader reader =
+                        new java.io.InputStreamReader(
+                            in,
+                            java.nio.charset.StandardCharsets.UTF_8);
+                    java.util.Properties props = new java.util.Properties();
+                    try {
+                        props.load(reader);
+                    } finally {
+                        reader.close();
+                    }
+                    java.io.ByteArrayOutputStream baos =
+                        new java.io.ByteArrayOutputStream();
+                    props.store(baos, null);
+                    java.io.ByteArrayInputStream bais =
+                        new java.io.ByteArrayInputStream(baos.toByteArray());
+                    return new java.util.PropertyResourceBundle(bais);
+                } catch (java.io.IOException e) {
+                    return null;
+                }
+            }
+        };
+
+    /**
      * Store bundles for current Locale.
      */
     private static Map<String, ResourceBundle> bundles;
@@ -269,7 +338,7 @@ public final class Translator {
         try {
             LOG.log(Level.FINE, "Loading {0}", resource);
             Locale locale = Locale.getDefault();
-            bundle = ResourceBundle.getBundle(resource, locale);
+            bundle = ResourceBundle.getBundle(resource, locale, UTF8_CONTROL);
         } catch (MissingResourceException e1) {
             LOG.log(Level.FINE,
                     "Resource {0} not found in the default class loader.",
@@ -285,7 +354,8 @@ public final class Translator {
 		    bundle =
 			ResourceBundle.getBundle(resource,
 						 Locale.getDefault(),
-						 cl);
+						 cl,
+						 UTF8_CONTROL);
 		    break;
 		} catch (MissingResourceException e2) {
                     LOG.log(Level.FINE,

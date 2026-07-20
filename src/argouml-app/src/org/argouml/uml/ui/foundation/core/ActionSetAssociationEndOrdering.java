@@ -62,10 +62,10 @@ public class ActionSetAssociationEndOrdering extends UndoableAction {
      * Constructor for ActionSetElementOwnershipSpecification.
      */
     protected ActionSetAssociationEndOrdering() {
-        super(Translator.localize("Set"), null);
+        super(Translator.localize("action.set"), null);
         // Set the tooltip string:
-        putValue(Action.SHORT_DESCRIPTION, 
-                Translator.localize("Set"));
+        putValue(Action.SHORT_DESCRIPTION,
+                Translator.localize("action.set"));
     }
 
     /*

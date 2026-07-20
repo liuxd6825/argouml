@@ -174,12 +174,17 @@ public class DetailsPane
 
     /* TODO: Some parts of ArgoUML have preliminary support for multiple
      * details panels, but we currently only support
-     * the default South (bottom) panel
+     * the default South (bottom) panel.
+     *
+     * East is also tabs-enabled to host the
+     * {@link TabUseCaseRepresentedDiagrams} "As Diagram" sidebar
+     * (routed via {@link org.argouml.application.SubsystemUtility}).
      */
     private void loadTabs(String direction) {
         if (Position.South.toString().equalsIgnoreCase(direction)
                 // Special case for backward compatibility
-                || "detail".equalsIgnoreCase(direction)) {
+                || "detail".equalsIgnoreCase(direction)
+                || Position.East.toString().equalsIgnoreCase(direction)) {
             /* The south panel always has tabs - but they are
              * added (later) elsewhere.
              */
@@ -234,6 +239,16 @@ public class DetailsPane
     }
 
     /**
+     * Test-only accessor returning the list of tabs currently held by
+     * this DetailsPane. Package-private so tests can assert that
+     * {@code SubsystemUtility.initSubsystem} routed every details tab
+     * to the east pane.
+     */
+    List<JPanel> getTabPanelListForTest() {
+        return tabPanelList;
+    }
+
+    /**
      * Selects the to do tab, and sets the target of that tab.
      *
      * @param item the selected todo item
@@ -262,9 +277,17 @@ public class DetailsPane
      * @return true if props tab is really selected
      */
     private boolean selectPropsTab(Object target) {
-        if (getTabProps().shouldBeEnabled(target)) {
+        TabProps props = getTabProps();
+        if (props == null) {
+            // Details panes that don't host TabProps (e.g. the east
+            // pane hosting {@code TabUseCaseRepresentedDiagrams})
+            // cannot select a properties tab — fall back to letting
+            // the caller choose another enabled tab.
+            return false;
+        }
+        if (props.shouldBeEnabled(target)) {
             int indexOfPropPanel = topLevelTabbedPane
-                    .indexOfComponent(getTabProps());
+                    .indexOfComponent(props);
             topLevelTabbedPane.setSelectedIndex(indexOfPropPanel);
             lastNonNullTab = indexOfPropPanel;
             return true;
@@ -322,19 +345,25 @@ public class DetailsPane
             }
             // default tab todo
             if (!tabSelected) {
-                JPanel tab = tabPanelList.get(0);
-                if (!(tab instanceof TabToDoTarget)) {
-                    for (JPanel panel : tabPanelList) {
-                        if (panel instanceof TabToDoTarget) {
-                            tab = panel;
-                            break;
+                // Some DetailsPanes host no tabs at all (e.g. the
+                // south/southeast/northwest/north/northeast panes
+                // after the "tabs → east" migration). Without this
+                // guard tabPanelList.get(0) throws IOOBE.
+                if (!tabPanelList.isEmpty()) {
+                    JPanel tab = tabPanelList.get(0);
+                    if (!(tab instanceof TabToDoTarget)) {
+                        for (JPanel panel : tabPanelList) {
+                            if (panel instanceof TabToDoTarget) {
+                                tab = panel;
+                                break;
+                            }
                         }
                     }
-                }
-                if (tab instanceof TabToDoTarget) {
-                    topLevelTabbedPane.setSelectedComponent(tab);
-                    ((TabToDoTarget) tab).setTarget(target);
-                    lastNonNullTab = topLevelTabbedPane.getSelectedIndex();
+                    if (tab instanceof TabToDoTarget) {
+                        topLevelTabbedPane.setSelectedComponent(tab);
+                        ((TabToDoTarget) tab).setTarget(target);
+                        lastNonNullTab = topLevelTabbedPane.getSelectedIndex();
+                    }
                 }
             }
 

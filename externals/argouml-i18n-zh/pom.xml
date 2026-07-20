@@ -14,16 +14,16 @@
   <version>0.35.2-SNAPSHOT</version>
 
   <properties>
-    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
   <name>argouml-zh</name>
   <description>
 Chinese localization for ArgoUML.
 Sources vendored from https://github.com/argouml-tigris-org/argouml-i18n-zh
-(last upstream commit 89ec572, 2022-08-21). Chinese characters are stored as
-\uXXXX escapes in ISO-8859-1-encoded .properties files (Java ResourceBundle
-standard).
+(last upstream commit 89ec572, 2022-08-21). .properties files are encoded
+as UTF-8; legacy \uXXXX escapes are accepted and decoded by Java regardless
+of file encoding, so existing translation files remain valid.
 
 Drop this JAR on ArgoUML's classpath and start with
 -Duser.language=zh -Duser.country=CN to enable Simplified Chinese; use

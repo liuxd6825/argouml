@@ -42,6 +42,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ComponentEvent;
@@ -266,8 +267,14 @@ public abstract class PropPanel extends AbstractArgoJPanel implements
     public JLabel addField(String label, Component component) {
         JLabel jlabel = createLabelFor(label, component);
         component.setFont(stdFont);
-        add(jlabel);
-        add(component);
+        // Wrap the label+control pair in a single BorderLayout panel so
+        // the outer LabelledLayout sees one child per field. The
+        // BorderLayout places the label on the WEST at its preferred
+        // width and the control in the CENTER, where it fills the
+        // remaining row width — i.e. one row per attribute, matching
+        // the XML-driven LabelledComponent pattern in
+        // SwingUIFactory.addControl().
+        add(buildFieldRow(jlabel, component));
         if (component instanceof UMLStereotypeList) {
             UMLModelElementListModel2 list =
                 (UMLModelElementListModel2) ((UMLStereotypeList) component).getModel();
@@ -294,6 +301,28 @@ public abstract class PropPanel extends AbstractArgoJPanel implements
     }
 
     /**
+     * Build a single-row BorderLayout panel containing the given
+     * label (WEST, left-aligned, sized by its preferred width) and
+     * control (CENTER, fills remaining width). This is the single
+     * child that {@link #addField}, {@link #addFieldAfter} and
+     * {@link #addFieldBefore} hand to the outer LabelledLayout so
+     * that every attribute (label + editing control) occupies one
+     * row.
+     *
+     * @param label the field's caption
+     * @param control the field's editing control
+     * @return a panel ready to be added to a PropPanel
+     */
+    private JPanel buildFieldRow(JLabel label, Component control) {
+        JPanel row = new JPanel(new BorderLayout());
+        JPanel labelPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        labelPanel.add(label);
+        row.add(labelPanel, BorderLayout.WEST);
+        row.add(control, BorderLayout.CENTER);
+        return row;
+    }
+
+    /**
      * Add a component with the specified label positioned after another
      * component.
      *
@@ -312,8 +341,9 @@ public abstract class PropPanel extends AbstractArgoJPanel implements
             if (getComponent(i) == afterComponent) {
                 JLabel jlabel = createLabelFor(label, component);
                 component.setFont(stdFont);
-                add(jlabel, ++i);
-                add(component, ++i);
+                // Insert one BorderLayout-wrapped row directly after
+                // the matched component.
+                add(buildFieldRow(jlabel, component), i + 1);
                 return jlabel;
             }
         }
@@ -339,8 +369,10 @@ public abstract class PropPanel extends AbstractArgoJPanel implements
             if (getComponent(i) == beforeComponent) {
                 JLabel jlabel = createLabelFor(label, component);
                 component.setFont(stdFont);
-                add(jlabel, i - 1);
-                add(component, i++);
+                // Insert one BorderLayout-wrapped row directly before
+                // the matched component (i is the matched index, so the
+                // new row goes at index i, pushing beforeComponent to i+1).
+                add(buildFieldRow(jlabel, component), i);
                 return jlabel;
             }
         }

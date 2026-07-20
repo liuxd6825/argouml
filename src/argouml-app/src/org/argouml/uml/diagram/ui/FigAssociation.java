@@ -52,6 +52,7 @@ import java.util.Vector;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.argouml.i18n.Translator;
 import org.argouml.model.AddAssociationEvent;
 import org.argouml.model.AssociationChangeEvent;
 import org.argouml.model.AttributeChangeEvent;
@@ -754,10 +755,22 @@ class FigOrdering extends FigSingleLineText {
     }
 
     /**
-     * Returns the name of the OrderingKind.
+     * Returns the localized text shown next to an Association when
+     * it carries the {@code ordered} ordering kind. Empty string when
+     * the ordering is null, missing a name, or {@code unordered}
+     * (which the diagram does not annotate).
+     *
+     * <p>Before this method, the rendering was the hardcoded English
+     * literal {@code "{ordered}"} — flagged in the original source
+     * with {@code // TODO: I18N}. We now route the inner word through
+     * {@link Translator#localize} (key: {@code label.ordered}) and
+     * wrap it in braces, so non-English locales see a localized
+     * string instead of the raw English.</p>
      *
      * @param orderingKind the kind of ordering
-     * @return "{ordered}" or "", the latter if null or unordered
+     * @return localized annotation like {@code "{ordered}"} (English)
+     *     or {@code "{已排序}"} (Chinese), or {@code ""} when no
+     *     annotation should be drawn
      */
     private String getOrderingName(Object orderingKind) {
         if (orderingKind == null) {
@@ -772,8 +785,7 @@ class FigOrdering extends FigSingleLineText {
         if ("unordered".equals(Model.getFacade().getName(orderingKind))) {
             return "";
         }
-        // TODO: I18N
-        return "{" + Model.getFacade().getName(orderingKind) + "}";
+        return "{" + Translator.localize("label.ordered") + "}";
     }
 }
 

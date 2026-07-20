@@ -45,6 +45,7 @@ import java.util.List;
 import org.argouml.application.api.AbstractArgoJPanel;
 import org.argouml.application.api.GUISettingsTabInterface;
 import org.argouml.application.api.InitSubsystem;
+import org.argouml.ui.TabUseCaseRepresentedDiagrams;
 
 /**
  * Initialise this subsystem.
@@ -56,8 +57,8 @@ public class InitUmlUI implements InitSubsystem {
     public void init() {
     }
 
-    public List<AbstractArgoJPanel> getDetailsTabs() {
-        List<AbstractArgoJPanel> result = 
+public List<AbstractArgoJPanel> getDetailsTabs() {
+        List<AbstractArgoJPanel> result =
             new ArrayList<AbstractArgoJPanel>();
         result.add(new TabProps());
         result.add(new TabDocumentation());
@@ -66,6 +67,13 @@ public class InitUmlUI implements InitSubsystem {
         result.add(new TabConstraints());
         result.add(new TabStereotype());
         result.add(new TabTaggedValues());
+        /*
+         * Independent "As Diagram" sidebar on the right edge of the main
+         * window. Routed to the east pane by SubsystemUtility.initSubsystem
+         * (instanceof check). The same represented-diagrams table also lives
+         * inside the UseCase property panel for users who prefer it there.
+         */
+        result.add(new TabUseCaseRepresentedDiagrams());
         return result;
     }
 

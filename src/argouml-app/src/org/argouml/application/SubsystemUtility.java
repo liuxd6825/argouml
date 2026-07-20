@@ -71,18 +71,55 @@ public class SubsystemUtility {
             // needed for display
             GUI.getInstance().addProjectSettingsTab(tab);
         }
-        // ProjectBrowser.getInstance() returns null in argouml.headless
-        // mode (Main skips initializeGUI when -Dargouml.headless=true).
-        // ProjectBrowser.getInstance() has an `assert theInstance != null`
-        // which is disabled in production, so it returns null silently.
-        // Guard the details-tab hookup against that null so subsystems
-        // (including InitHttpServerSubsystem) can initialize under headless.
-        if (ProjectBrowser.getInstance() != null) {
+        // ProjectBrowser.getInstance() throws an AssertionError in
+        // test JVMs (where assertions are enabled) and returns null
+        // in production (where they are not). Probe the singleton
+        // field directly so the guard works in both modes —
+        // InitHttpServerSubsystem initializes under headless mode
+        // and must not crash if the GUI singleton is missing.
+        if (projectBrowserInitialized()) {
+            /*
+             * All details tabs (Properties, ToDo, Documentation, Style,
+             * Source, Constraints, Stereotype, TaggedValues, CheckList,
+             * "As Diagram", ...) now land in the east pane. The south
+             * pane field is kept (ProjectBrowser.getDetailsPane()) for
+             * legacy callers like DeveloperModule, but it is no longer
+             * attached to the BorderSplitPane — see ProjectBrowser
+             * .assemblePanels() — so tabs added here never become
+             * visible at the bottom of the main window.
+             */
+            DetailsPane eastPane =
+                (DetailsPane) ProjectBrowser.getInstance().getEastDetailsPane();
             for (AbstractArgoJPanel tab : subsystem.getDetailsTabs()) {
                 /* All tabs are added at the end, except a TabToDoTarget: */
-                ((DetailsPane) ProjectBrowser.getInstance().getDetailsPane())
-                    .addTab(tab, !(tab instanceof TabToDoTarget));
+                eastPane.addTab(tab, !(tab instanceof TabToDoTarget));
+                /* Honor the user's "View > Window" choice —
+                 * newly-added tabs default to hidden unless the
+                 * configuration marks them visible. */
+                org.argouml.ui.TabVisibilityRegistry.onTabAdded(tab);
             }
+        }
+    }
+
+    /**
+     * Returns {@code true} iff the {@link ProjectBrowser} singleton
+     * has been initialised. We probe the private static
+     * {@code theInstance} field via reflection so this check works
+     * even when assertions are enabled (the test JVM has
+     * {@code -ea}, and {@link ProjectBrowser#getInstance()} would
+     * otherwise throw AssertionError instead of returning
+     * {@code null}).
+     */
+    private static boolean projectBrowserInitialized() {
+        try {
+            java.lang.reflect.Field f =
+                    ProjectBrowser.class.getDeclaredField("theInstance");
+            f.setAccessible(true);
+            return f.get(null) != null;
+        } catch (java.lang.NoSuchFieldException e) {
+            return false;
+        } catch (java.lang.IllegalAccessException e) {
+            return false;
         }
     }
 

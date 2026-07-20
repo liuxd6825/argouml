@@ -247,51 +247,24 @@ public class LabelledLayout implements LayoutManager, java.io.Serializable {
             int sectionX = parent.getInsets().left;
 
             final ArrayList<Component> components = new ArrayList<Component>();
-            final int sectionCount = getSectionCount(parent);
-            final int sectionWidth = getSectionWidth(parent, sectionCount);
-            int sectionNo = 0;
+            // Single-column layout: every child (including Seperator
+            // gap markers) is laid out in one section at full width.
+            // Seperator instances are 4px-tall invisible gap rows — see
+            // Seperator below.
             for (int i = 0; i < parent.getComponentCount(); ++i) {
-                final Component childComp = parent.getComponent(i);
-                if (childComp instanceof Seperator) {
-                    if (!this.ignoreSplitters) {
-                        layoutSection(
-                                parent, 
-                                sectionX, 
-                                sectionWidth, 
-                                components, 
-                                sectionNo++);
-                        sectionX += sectionWidth + this.hgap;
-                        components.clear();
-                    }
-                } else {
-                    components.add(parent.getComponent(i));
-                }
+                components.add(parent.getComponent(i));
             }
-            layoutSection(
-                    parent, 
-                    sectionX, 
-                    sectionWidth, 
-                    components, 
-                    sectionNo);
+            final int sectionWidth = getUsableWidth(parent);
+            layoutSection(parent, sectionX, sectionWidth, components, 0);
         }
     }
 
-    /** Determine the number of sections.  There is only ever one
-     * section if oriented vertically.  If oriented horizontally the
-     * number of sections is deduced from the number of Splitters in
-     * the parent container.
+    /** Determine the number of sections.  Single-column layout means
+     * there is always exactly one section, regardless of any
+     * Seperator children in the parent container.
      */
     private int getSectionCount(Container parent) {
-        int sectionCount = 1;
-        final int componentCount = parent.getComponentCount();
-        if (!ignoreSplitters) {
-            for (int i = 0; i < componentCount; ++i) {
-                if (parent.getComponent(i) instanceof Seperator) {
-                    ++sectionCount;
-                }
-            }
-        }
-        return sectionCount;
+        return 1;
     }
     
     /**
@@ -356,7 +329,7 @@ public class LabelledLayout implements LayoutManager, java.io.Serializable {
                 }
                 
                 totalHeight += childHeight + this.vgap;
-                rowHeights.add(new Integer(childHeight));
+                rowHeights.add(Integer.valueOf(childHeight));
             } else {
                 // to manage the case there are no label/component
                 // pairs but just one component
@@ -366,7 +339,7 @@ public class LabelledLayout implements LayoutManager, java.io.Serializable {
                 }
                 
                 totalHeight += childHeight + this.vgap;
-                rowHeights.add(new Integer(childHeight));
+                rowHeights.add(Integer.valueOf(childHeight));
             }
             
             previousComp = childComp;
@@ -498,19 +471,29 @@ public class LabelledLayout implements LayoutManager, java.io.Serializable {
     }
     
     private int getPreferredHeight(final Component comp) {
-        return (int) comp.getPreferredSize().getHeight();
+        Dimension d = comp.getPreferredSize();
+        // Some components (notably LabelledComponent wrapping a JComboBox,
+        // see LabelledComponent#getPreferredSize) historically returned
+        // null here as a JRE-5 scroll-pane workaround.  A null returns
+        // blew up as NPE when the JScrollPane inside TabProps asked the
+        // viewport for the view's preferred size.  Treat null as a 0x0
+        // zero-size contribution so the layout finishes without error.
+        return d == null ? 0 : (int) d.getHeight();
     }
-    
+
     private int getPreferredWidth(final Component comp) {
-        return (int) comp.getPreferredSize().getWidth();
+        Dimension d = comp.getPreferredSize();
+        return d == null ? 0 : (int) d.getWidth();
     }
 
     private int getMinimumHeight(final Component comp) {
-        return (int) comp.getMinimumSize().getHeight();
+        Dimension d = comp.getMinimumSize();
+        return d == null ? 0 : (int) d.getHeight();
     }
-    
+
     private int getMaximumWidth(final Component comp) {
-        return (int) comp.getMaximumSize().getWidth();
+        Dimension d = comp.getMaximumSize();
+        return d == null ? Integer.MAX_VALUE : (int) d.getWidth();
     }
     
     /**
@@ -553,10 +536,20 @@ public class LabelledLayout implements LayoutManager, java.io.Serializable {
 }
 
 class Seperator extends JPanel {
-    
+
     private static final long serialVersionUID = -4143634500959911688L;
 
     Seperator() {
-        super.setVisible(false);
+        // Seperators are no longer column-split markers (single-column
+        // layout). They are laid out as small gap rows: 4px tall, full
+        // panel width, painted as empty space. setVisible(true) is
+        // required so LabelledLayout.layoutContainer's per-component
+        // visibility check lets them through to the bounds-setting
+        // loop.
+        super.setVisible(true);
+        Dimension gap = new Dimension(0, 4);
+        setMinimumSize(gap);
+        setPreferredSize(gap);
+        setMaximumSize(gap);
     }
 }

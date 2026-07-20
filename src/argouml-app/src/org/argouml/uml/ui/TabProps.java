@@ -45,6 +45,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.EventListenerList;
 
 import org.argouml.application.api.AbstractArgoJPanel;
@@ -96,6 +98,15 @@ public class TabProps
      */
     private JPanel currentPanel;
 
+    /**
+     * Single JScrollPane wrapping {@link #currentPanel}. Created lazily
+     * on first call to {@link #getScrollPane()} and reused across every
+     * target change via {@code setViewportView}. Carries the
+     * vertical scrollbar policy that gives the "属性" tab automatic
+     * scroll behaviour when content overflows the visible area.
+     */
+    private JScrollPane scrollPane;
+
     private Object target;
 
     /**
@@ -128,6 +139,30 @@ public class TabProps
         setOrientation(Horizontal.getInstance());
         panelClassBaseName = panelClassBase;
         setLayout(new BorderLayout());
+        // Mount the (single) JScrollPane at CENTER; subsequent target
+        // changes replace the viewport view rather than this container.
+        // The scroll pane itself has no view yet — the first
+        // setTarget() call installs the first PropPanel.
+        add(getScrollPane(), BorderLayout.CENTER);
+    }
+
+    /**
+     * Lazy accessor for the JScrollPane that hosts every property
+     * panel this tab displays. The pane shows a vertical scrollbar
+     * only when the active PropPanel's preferred height exceeds the
+     * available viewport — standard Swing AS_NEEDED behaviour.
+     *
+     * @return the shared JScrollPane instance
+     */
+    private JScrollPane getScrollPane() {
+        if (scrollPane == null) {
+            scrollPane = new JScrollPane();
+            scrollPane.setHorizontalScrollBarPolicy(
+                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            scrollPane.setVerticalScrollBarPolicy(
+                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        }
+        return scrollPane;
     }
 
     /**
@@ -199,12 +234,12 @@ public class TabProps
         }
 
         if (lastPanel != null) {
-            remove(lastPanel);
             if (lastPanel instanceof TargetListener) {
                 // TODO: We should assert this never happens before removing
                 // panels should control their own listeners
                 removeTargetListener((TargetListener) lastPanel);
             }
+            lastPanel = null;
         }
 
         // TODO: No need to do anything if we're not visible
@@ -214,9 +249,9 @@ public class TabProps
 
         this.target = target;
         if (target == null) {
-            add(blankPanel, BorderLayout.CENTER);
-            validate();
-            repaint();
+            // No selection — show the blank panel inside the scroll
+            // pane's viewport so the pane still has *some* view.
+            currentPanel = blankPanel;
             lastPanel = blankPanel;
         } else {
             JPanel newPanel = findPanelFor(target);
@@ -225,7 +260,11 @@ public class TabProps
             }
 
             if (currentPanel != null) {
-                remove(currentPanel);
+                // Detach the previous view from the scroll pane so it
+                // can be reclaimed; we do not remove it from "this"
+                // because it was never added there — it lived inside
+                // the JScrollPane viewport.
+                getScrollPane().setViewportView(null);
                 currentPanel = null;
             }
             if (newPanel != null) {
@@ -234,10 +273,23 @@ public class TabProps
                 currentPanel = blankPanel;
                 lastPanel = blankPanel;
             }
-            add(currentPanel);
-            validate();
-            repaint();
         }
+        // Install the (possibly new) panel inside the single scroll
+        // pane at CENTER. setViewportView replaces any prior view.
+        getScrollPane().setViewportView(currentPanel);
+        // Force the scroll-pane subtree (viewport + view + all children)
+        // to relayout.  Without this, a freshly-newed XmlPropertyPanel
+        // that has never been laid out shows as a 0×0 blank after the
+        // viewport swap.  isLayoutValid() flips false here and Swing
+        // walks down from JScrollPane->JViewport->the view, recalc'ing
+        // preferredSize so the LabelledLayout lays out all children.
+        getScrollPane().revalidate();
+        // Reset scroll position to the top so a freshly-selected
+        // element always starts at its title row, matching
+        // IDE/Eclipse conventions.
+        getScrollPane().getVerticalScrollBar().setValue(0);
+        validate();
+        repaint();
     }
 
     /*

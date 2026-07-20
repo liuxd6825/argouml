@@ -37,6 +37,7 @@
 // UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 package org.argouml.util;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -63,6 +64,69 @@ import junit.framework.Assert;
  *   @see java.util.ListResourceBundle
  */
 public class CheckResourceBundle {
+
+    /**
+     * ResourceBundle.Control that loads {@code .properties} files as UTF-8.
+     * <p>
+     * Mirrors the production {@code Translator.UTF8_CONTROL} so this
+     * test-side bundle loader matches runtime behavior. The default
+     * {@link ResourceBundle.Control} reads .properties as ISO-8859-1;
+     * since Java 9 a UTF-8 reader is obtained by overriding
+     * {@code Control.newBundle} to use a UTF-8 InputStreamReader.
+     */
+    private static final ResourceBundle.Control UTF8_CONTROL =
+        new ResourceBundle.Control() {
+            @Override
+            public ResourceBundle newBundle(String baseName, Locale locale,
+                                            String format, ClassLoader loader,
+                                            boolean reload)
+                    throws java.io.IOException,
+                           IllegalAccessException,
+                           InstantiationException {
+                if (!"java.properties".equals(format)) {
+                    return super.newBundle(baseName, locale, format,
+                                           loader, reload);
+                }
+                String bundleName = toBundleName(baseName, locale);
+                String resourceName = toResourceName(bundleName, "properties");
+                java.io.InputStream in;
+                try {
+                    if (reload) {
+                        java.net.URL url = loader.getResource(resourceName);
+                        if (url == null) {
+                            return null;
+                        }
+                        in = url.openStream();
+                    } else {
+                        in = loader.getResourceAsStream(resourceName);
+                    }
+                    if (in == null) {
+                        return null;
+                    }
+                } catch (java.io.IOException e) {
+                    return null;
+                }
+                try {
+                    java.io.InputStreamReader reader =
+                        new java.io.InputStreamReader(
+                            in,
+                            StandardCharsets.UTF_8);
+                    java.util.Properties props = new java.util.Properties();
+                    try {
+                        props.load(reader);
+                    } finally {
+                        reader.close();
+                    }
+                    java.io.ByteArrayOutputStream baos =
+                        new java.io.ByteArrayOutputStream();
+                    props.store(baos, null);
+                    return new java.util.PropertyResourceBundle(
+                        new java.io.ByteArrayInputStream(baos.toByteArray()));
+                } catch (java.io.IOException e) {
+                    return null;
+                }
+            }
+        };
 
     private static boolean bundleContains(ResourceBundle b, String key) {
 	try {
@@ -253,7 +317,8 @@ public class CheckResourceBundle {
     public static void checkResourceBundle(String bname,
 					   String[] tags) {
 	ResourceBundle b = ResourceBundle.getBundle(bname,
-						    new Locale("", "", ""));
+						    new Locale("", "", ""),
+						    UTF8_CONTROL);
 
 	checkContainsAllFrom(b, tags);
 	checkNoDuplicates(b);
@@ -264,7 +329,7 @@ public class CheckResourceBundle {
 
 	for (Locale l : v) {
 
-	    ResourceBundle locb = ResourceBundle.getBundle(bname, l);
+	    ResourceBundle locb = ResourceBundle.getBundle(bname, l, UTF8_CONTROL);
 
 	    Assert.assertTrue("Resource bundle "
 				+ bname

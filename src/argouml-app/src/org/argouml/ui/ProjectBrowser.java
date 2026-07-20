@@ -461,9 +461,18 @@ public final class ProjectBrowser
         // There are various details panes all of which could hold
         // different tabs pages according to users settings.
         // Place each pane in the required border area.
+        // The south pane is intentionally skipped: all details tabs
+        // (Properties, ToDo, Documentation, Style, Source, Constraints,
+        // Stereotype, TaggedValues, CheckList, "As Diagram", ...) now
+        // route to the east pane via SubsystemUtility.initSubsystem,
+        // and the southPane field is kept solely for the legacy
+        // DeveloperModule caller of ProjectBrowser.getDetailsPane().
         for (Map.Entry<Position, DetailsPane> entry
                 : detailsPanesByCompassPoint.entrySet()) {
             Position position = entry.getKey();
+            if (position == Position.South) {
+                continue;
+            }
             addPanel(entry.getValue(), position);
         }
 
@@ -860,6 +869,15 @@ public final class ProjectBrowser
      */
     public JPanel getDetailsPane() {
         return southPane;
+    }
+
+    /**
+     * @return the east details pane (right edge of the main window).
+     *         Currently hosts the {@code TabUseCaseRepresentedDiagrams} tab
+     *         registered via {@link org.argouml.application.SubsystemUtility}.
+     */
+    public JPanel getEastDetailsPane() {
+        return eastPane;
     }
 
 

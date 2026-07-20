@@ -114,6 +114,7 @@ import org.argouml.util.ItemUID;
 import org.tigris.gef.base.Geometry;
 import org.tigris.gef.base.Globals;
 import org.tigris.gef.base.Layer;
+import org.tigris.gef.base.CmdReorder;
 import org.tigris.gef.base.Selection;
 import org.tigris.gef.persistence.pgml.PgmlUtility;
 import org.tigris.gef.presentation.ArrowHead;
@@ -340,6 +341,12 @@ public abstract class FigEdgeModelElement
     public Vector getPopUpActions(MouseEvent me) {
         ActionList popUpActions =
             new ActionList(super.getPopUpActions(me), isReadOnly());
+
+        // GEF 0.13.7 injects an un-translated "Ordering" JMenu populated
+        // with 4 CmdReorder.* singletons whose display names come from
+        // bytecode string constants. Strip that menu and append our
+        // localized ReorderMenuBuilder submenu. See docs/i18n.md §8.
+        ReorderMenuBuilder.replaceGefOrderingSubmenu(popUpActions);
 
         // Added this part to load the extra menu content
         final List<Action> modulesActions =

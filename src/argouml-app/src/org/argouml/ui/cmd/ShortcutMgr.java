@@ -316,11 +316,30 @@ public class ShortcutMgr {
      */
     private static final Logger LOG = Logger.getLogger(ShortcutMgr.class.getName());
 
-    private static final int DEFAULT_MASK = Toolkit.getDefaultToolkit()
-            .getMenuShortcutKeyMask();
+    /** {@code 0} on a headless JVM — see {@link #initDefaults()}. */
+    private static final int DEFAULT_MASK =
+            initDefaults()[0];
 
-    private static final int SHIFTED_DEFAULT_MASK = Toolkit.getDefaultToolkit()
-            .getMenuShortcutKeyMask() | KeyEvent.SHIFT_DOWN_MASK;
+    /** {@code 0} on a headless JVM — see {@link #initDefaults()}. */
+    private static final int SHIFTED_DEFAULT_MASK =
+            initDefaults()[1];
+
+    /**
+     * Compute the default modifier masks for menu shortcuts. Wrapped in
+     * a helper so a {@link java.awt.HeadlessException} (raised when
+     * running surefire headless tests) does not break
+     * {@code <clinit>} for the whole {@code ShortcutMgr} class.
+     *
+     * @return a 2-element array — {@code [DEFAULT_MASK, SHIFTED_DEFAULT_MASK]}
+     */
+    private static int[] initDefaults() {
+        try {
+            int dflt = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
+            return new int[] {dflt, dflt | KeyEvent.SHIFT_DOWN_MASK};
+        } catch (java.awt.HeadlessException e) {
+            return new int[] {0, 0};
+        }
+    }
 
     private static HashMap<String, ActionWrapper> shortcutHash =
         new HashMap<String, ActionWrapper>(90);

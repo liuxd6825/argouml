@@ -51,7 +51,7 @@
   </dependencyManagement>
 
   <properties>
-    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <compileSource>1.8</compileSource>
     <github.site.org>https://github.com/argouml-tigris-org</github.site.org>
     <gerrithub.site.org.ssh>ssh://review.gerrithub.io:29418/argouml-tigris-org</gerrithub.site.org.ssh>
