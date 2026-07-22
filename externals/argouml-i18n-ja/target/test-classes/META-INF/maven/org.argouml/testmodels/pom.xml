@@ -1,0 +1,107 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                      http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.argouml</groupId>
+  <artifactId>testmodels</artifactId>
+  <version>0.35.2-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+    <relativePath/>
+  </parent>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <includes>
+          <include>testmodels/**</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <!-- This cannot depend on parentpom since it is built "before". -->
+      <!-- These needs to be restated in the same way as in parentpom. -->
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <version>3.7.1</version>
+        <configuration>
+          <skipDeploy>true</skipDeploy>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-publish-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <serverId>github</serverId>
+          <pubScmUrl>scm:git:${project.scm.url}</pubScmUrl>
+          <!-- There is a problem in jgit in that it can't delete files.
+               See https://issues.apache.org/jira/browse/SCM-925
+           -->
+          <skipDeletedFiles>true</skipDeletedFiles>
+          <scmBranch>gh-pages</scmBranch>
+          <providerImplementations>
+	    <git>jgit</git>
+	  </providerImplementations>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-api</artifactId>
+            <version>1.11.2</version>
+          </dependency>
+	  <dependency>
+	    <groupId>org.apache.maven.scm</groupId>
+	    <artifactId>maven-scm-provider-jgit</artifactId>
+            <version>1.11.2</version>
+	  </dependency>
+	</dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>publish-scm</goal>
+            </goals>
+            <phase>site-deploy</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <name>testmodels</name>
+  <description>
+Packaging of the tested models to allow reuse of them also when using git+maven.
+  </description>
+
+  <properties>
+    <github.site.repositoryName>${project.artifactId}</github.site.repositoryName>
+    <github.site.org>https://github.com/argouml-tigris-org</github.site.org>
+    <gerrithub.site.org.ssh>ssh://review.gerrithub.io:29418/argouml-tigris-org</gerrithub.site.org.ssh>
+    <github.site.pages>https://argouml-tigris-org.github.io</github.site.pages>
+  </properties>
+
+  <issueManagement>
+    <system>GitHub Issues</system>
+    <url>https://github.com/argouml-tigris-org/${github.site.repositoryName}/issues</url>
+  </issueManagement>
+
+  <scm>
+    <url>${github.site.org}/${github.site.repositoryName}</url>
+    <connection>scm:git:${github.site.org}/${github.site.repositoryName}.git</connection>
+    <developerConnection>scm:git:${gerrithub.site.org.ssh}/${github.site.repositoryName}.git</developerConnection>
+  </scm>
+
+  <distributionManagement>
+    <site>
+        <id>site-docs</id>
+        <url>${github.site.pages}/${github.site.repositoryName}</url>
+    </site>
+  </distributionManagement>
+
+</project>

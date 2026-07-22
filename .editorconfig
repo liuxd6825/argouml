@@ -1,0 +1,42 @@
+# EditorConfig: https://editorconfig.org
+# ArgoUML enforces UTF-8 source encoding across the entire repo.
+# This file takes precedence over IntelliJ's "Default encoding for
+# properties files" preference (ISO-8859-1 by default), which would
+# otherwise render the recently-converted UTF-8 Chinese bundles as
+# garbled characters. See AGENTS.md §i18n maintenance → "IntelliJ IDEA
+# setup" for background.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.properties]
+# Override IntelliJ's "Default encoding for properties files"
+# (ISO-8859-1 by default) which would otherwise render recently
+# converted UTF-8 Chinese bundles as garbled characters.
+charset = utf-8
+# end_of_line intentionally NOT enforced — some bundles retain CRLF
+# (the legacy zh_TW vendors' convention) and some are LF (zh_CN).
+# Converting all to LF would touch every file; converting to CRLF
+# would touch every file. We leave both as-is.
+end_of_line = unset
+insert_final_newline = false
+
+[*.md]
+# Markdown keeps trailing whitespace meaningful (line breaks).
+trim_trailing_whitespace = false
+
+[*.xml]
+indent_size = 2
+
+[Makefile*]
+indent_style = tab
+
+[*.{bat,cmd}]
+end_of_line = crlf
