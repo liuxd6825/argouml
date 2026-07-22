@@ -49,7 +49,6 @@ import java.util.logging.Logger;
 
 import javax.swing.Action;
 import javax.swing.ButtonGroup;
-import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -610,26 +609,21 @@ public class GenericArgoMenuBar extends JMenuBar implements
                     new ToggleTabVisibilityAction(tabKey);
             act.putValue(javax.swing.Action.NAME,
                     Translator.localize("tab." + tabKey));
-            JCheckBoxMenuItem item = new JCheckBoxMenuItem(act);
-            // Attach the item to its parent menu FIRST.  We deliberately
-            // do NOT call item.setSelected(...) here — under the
-            // macOS Aqua LAF, calling setSelected on a freshly-constructed
-            // item (even on an attached one, for default-FALSE items
-            // whose state is already "unchecked") leaves the menu item
-            // in a state where the very first user click fires no
-            // model toggle and no actionPerformed.  We let the model
-            // start in its constructor default (unselected) and rely on
-            // the JCheckBoxMenuItem's own click handling to drive the
-            // first toggle when the user actually clicks.  The
-            // ChangeListener below then keeps the visual checkmark in
-            // sync with whatever Config-backed visibility the registry
-            // reports after the action has run.
+            // Use a plain JMenuItem with an explicit check-mark icon
+            // rather than a JCheckBoxMenuItem.  The macOS Aqua LAF
+            // routes JCheckBoxMenuItem through NSMenuItem, and its
+            // model-based selected state gets out of sync with the
+            // JRE model in a way that swallows the very first user
+            // click.  A regular JMenuItem with an icon we control
+            // directly (set in the constructor and updated in
+            // ToggleTabVisibilityAction.actionPerformed) sidesteps that
+            // whole JCheckBoxMenuItem / DefaultButtonModel / NSMenuItem
+            // state-sync mess and gives the same visual result — a
+            // check mark next to "currently shown" entries.
+            JMenuItem item = new JMenuItem(act);
+            item.setIcon(act.isCurrentlyVisible()
+                    ? CheckIcon.INSTANCE : null);
             menuWindow.add(item);
-            item.addChangeListener(e -> {
-                if (item.isSelected() != act.isCurrentlyVisible()) {
-                    item.setSelected(act.isCurrentlyVisible());
-                }
-            });
         }
 
         JMenuItem showSaved = view.add(new ActionShowXMLDump());

@@ -52,6 +52,15 @@ public final class ToggleTabVisibilityAction extends AbstractAction {
         // already-computed newVisible to the registry so the panel
         // state and config stay in lockstep.
         TabVisibilityRegistry.toggle(tabKey, nowVisible);
+        // Keep the menu item's check-mark icon in sync with the new
+        // visibility.  We don't rely on JCheckBoxMenuItem here (its
+        // model-based state sync misbehaves on the macOS Aqua LAF) —
+        // we use a plain JMenuItem + this explicit setIcon call instead.
+        Object src = e.getSource();
+        if (src instanceof javax.swing.JMenuItem) {
+            ((javax.swing.JMenuItem) src).setIcon(
+                    nowVisible ? CheckIcon.INSTANCE : null);
+        }
     }
 
     /** Exposed so the menu item can keep its check-state in sync. */
